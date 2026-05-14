@@ -434,6 +434,36 @@ document.getElementById("play-btn").addEventListener("click", () => {
 // PLAYER ID
 const PLAYER_ID = "p_" + Math.random().toString(36).slice(2);
 
+// WEAPON SYSTEM
+const weapons = {
+    rifle: {
+        name: "Rifle",
+        damage: 12,
+        fireRate: 0.12,
+        recoil: 0.012,
+        range: 60
+    },
+    smg: {
+        name: "SMG",
+        damage: 7,
+        fireRate: 0.07,
+        recoil: 0.008,
+        range: 45
+    },
+    shotgun: {
+        name: "Shotgun",
+        damage: 8,
+        pellets: 6,
+        spread: 0.12,
+        fireRate: 0.6,
+        recoil: 0.03,
+        range: 25
+    }
+};
+
+let currentWeapon = weapons.rifle;
+let recoilKick = 0;
+
 // THREE.JS SETUP
 const canvas = document.getElementById("game");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -701,17 +731,22 @@ function showHitmarker() {
 shootBtn.addEventListener("touchstart", e => {
     if (shootCooldown <= 0) {
         shoot();
-        shootCooldown = 0.25;
+        shootCooldown = currentWeapon.fireRate;
     }
     e.preventDefault();
 });
 
 function shoot() {
-    const origin = camera.position.clone();
+    const origin = player.position.clone();
+    origin.y += 1.4;
+
     const dir = new THREE.Vector3();
     camera.getWorldDirection(dir);
 
-    const ray = new THREE.Raycaster(origin, dir, 0, 50);
+    // apply recoil kick
+    dir.y -= recoilKick;
+
+    const ray = new THREE.Raycaster(origin, dir, 0, currentWeapon.range);
 
     const targets = [];
     otherPlayers.forEach(p => targets.push(p.obj));
@@ -737,27 +772,29 @@ function shoot() {
                 body: JSON.stringify({
                     attacker: PLAYER_ID,
                     target: targetId,
-                    amount: 12
+                    amount: currentWeapon.damage
                 })
             });
         }
     }
+
+    recoilKick += currentWeapon.recoil;
 }
 
 // GRENADE SYSTEM
 class Grenade {
     constructor(position, direction) {
         this.mesh = new THREE.Mesh(
-            new THREE.SphereGeometry(0.2, 12, 12),
+            new THREE.SphereGeometry(0.25, 12, 12),
             new THREE.MeshPhongMaterial({ color: 0x888888 })
         );
         this.mesh.position.copy(position);
 
-        this.velocity = direction.clone().multiplyScalar(10);
-        this.gravity = new THREE.Vector3(0, -30, 0);
+        this.velocity = direction.clone(); // already scaled
+        this.gravity = new THREE.Vector3(0, -25, 0);
 
         this.alive = true;
-        this.timer = 5.0;
+        this.timer = 3.0;
         this.exploded = false;
 
         scene.add(this.mesh);
@@ -782,7 +819,6 @@ class Grenade {
         this.exploded = true;
         this.alive = false;
 
-        // Multiplayer grenade damage
         otherPlayers.forEach((entry, id) => {
             const dist = entry.obj.position.distanceTo(this.mesh.position);
             if (dist < 3) {
@@ -806,9 +842,13 @@ class Grenade {
 const grenades = [];
 
 function throwGrenade() {
-    const origin = camera.position.clone();
+    const origin = player.position.clone();
+    origin.y += 1.2;
+
     const dir = new THREE.Vector3();
     camera.getWorldDirection(dir);
+
+    dir.normalize().multiplyScalar(18);
 
     const g = new Grenade(origin, dir);
     grenades.push(g);
@@ -1029,6 +1069,7 @@ function loop(t) {
     lastTime = t;
 
     shootCooldown -= dt;
+    recoilKick *= 0.85;
 
     updateMovement(dt);
 
