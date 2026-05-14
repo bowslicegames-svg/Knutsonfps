@@ -17,6 +17,7 @@ html, body {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+/* Canvas */
 canvas {
     width: 100vw;
     height: 100vh;
@@ -39,7 +40,7 @@ canvas {
     text-transform: uppercase;
 }
 
-/* LOBBY */
+/* Lobby */
 #lobby {
     position: absolute;
     inset: 0;
@@ -87,7 +88,8 @@ canvas {
     color: #90a4ae;
 }
 
-.lobby-input, #name-input {
+.lobby-input,
+#name-input {
     width: 100%;
     padding: 6px 8px;
     border-radius: 4px;
@@ -98,7 +100,8 @@ canvas {
     font-size: 13px;
 }
 
-.lobby-input:focus, #name-input:focus {
+.lobby-input:focus,
+#name-input:focus {
     outline: none;
     border-color: #00e676;
 }
@@ -164,7 +167,10 @@ canvas {
     z-index: 10;
 }
 
-#joy-move { bottom: 40px; left: 40px; }
+#joy-move {
+    bottom: 40px;
+    left: 40px;
+}
 
 .stick {
     position: absolute;
@@ -178,7 +184,10 @@ canvas {
 }
 
 /* Buttons */
-#jump-btn, #sprint-btn, #shoot-btn, #grenade-btn {
+#jump-btn,
+#sprint-btn,
+#shoot-btn,
+#grenade-btn {
     position: absolute;
     bottom: 70px;
     width: 70px;
@@ -195,13 +204,32 @@ canvas {
     z-index: 10;
 }
 
-#jump-btn { right: 200px; }
-#sprint-btn { right: 290px; border-color: rgba(0, 230, 118, 0.8); color: #00e676; }
-#shoot-btn { right: 110px; border-color: rgba(255, 82, 82, 0.9); color: #ff5252; }
-#grenade-btn { right: 30px; border-color: rgba(255, 165, 0, 0.9); color: #ffa500; font-weight: 700; }
+#jump-btn {
+    right: 200px;
+}
+
+#sprint-btn {
+    right: 290px;
+    border-color: rgba(0, 230, 118, 0.8);
+    color: #00e676;
+}
+
+#shoot-btn {
+    right: 110px;
+    border-color: rgba(255, 82, 82, 0.9);
+    color: #ff5252;
+}
+
+#grenade-btn {
+    right: 30px;
+    border-color: rgba(255, 165, 0, 0.9);
+    color: #ffa500;
+    font-weight: 700;
+}
 
 /* Stamina + health */
-#stamina-container, #health-container {
+#stamina-container,
+#health-container {
     position: absolute;
     height: 16px;
     border-radius: 2px;
@@ -210,16 +238,31 @@ canvas {
     border: 1px solid rgba(0, 255, 128, 0.25);
 }
 
-#stamina-container { bottom: 150px; right: 40px; width: 200px; }
-#health-container { top: 10px; right: 40px; width: 200px; }
+#stamina-container {
+    bottom: 150px;
+    right: 40px;
+    width: 200px;
+}
 
-#stamina-bar, #health-bar {
+#health-container {
+    top: 10px;
+    right: 40px;
+    width: 200px;
+}
+
+#stamina-bar,
+#health-bar {
     width: 100%;
     height: 100%;
 }
 
-#stamina-bar { background: linear-gradient(90deg, #00e676, #aeea00); }
-#health-bar { background: linear-gradient(90deg, #ff1744, #ff9100); }
+#stamina-bar {
+    background: linear-gradient(90deg, #00e676, #aeea00);
+}
+
+#health-bar {
+    background: linear-gradient(90deg, #ff1744, #ff9100);
+}
 
 /* Crosshair */
 #crosshair {
@@ -236,7 +279,7 @@ canvas {
     z-index: 10;
 }
 
-/* Hit marker */
+/* Hitmarker */
 #hitmarker {
     position: absolute;
     left: 50%;
@@ -283,51 +326,50 @@ canvas {
 
 /* Killfeed */
 .glass-feed {
-    position:absolute;
-    top:20px; right:20px;
-    width:220px;
-    padding:12px;
-    color:#bfeaff;
-    font-size:14px;
-    text-align:right;
-    backdrop-filter:blur(12px);
-    background:rgba(0,40,70,0.25);
-    border:1px solid rgba(0,255,128,0.25);
-    box-shadow:0 0 12px rgba(0,255,128,0.25);
-    pointer-events:none;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 220px;
+    padding: 12px;
+    color: #bfeaff;
+    font-size: 14px;
+    text-align: right;
+    backdrop-filter: blur(12px);
+    background: rgba(0,40,70,0.25);
+    border: 1px solid rgba(0,255,128,0.25);
+    box-shadow: 0 0 12px rgba(0,255,128,0.25);
+    pointer-events: none;
 }
 </style>
 </head>
-
 <body>
 
 <!-- LOBBY -->
 <div id="lobby">
-    <div id="lobby-panel">
-        <div id="lobby-title">KNUTSONFPS</div>
-        <div id="lobby-subtitle">TACTICAL MOBILE ARENA</div>
+  <div id="lobby-panel">
+    <div id="lobby-title">KNUTSONFPS</div>
+    <div id="lobby-subtitle">TACTICAL MOBILE ARENA</div>
 
-        <div class="lobby-label">Operator ID</div>
-        <input id="name-input" class="lobby-input" maxlength="16" value="KnutsonFPS" />
+    <div class="lobby-label">Operator ID</div>
+    <input id="name-input" class="lobby-input" maxlength="16" value="KnutsonFPS" />
 
-        <div class="lobby-label">Squad Colour</div>
-        <div id="color-row">
-            <div class="color-swatch" data-color="0xff5252" style="background:#ff5252"></div>
-            <div class="color-swatch" data-color="0x40c4ff" style="background:#40c4ff"></div>
-            <div class="color-swatch" data-color="0x69f0ae" style="background:#69f0ae"></div>
-            <div class="color-swatch" data-color="0xffeb3b" style="background:#ffeb3b"></div>
-            <div class="color-swatch" data-color="0xff80ab" style="background:#ff80ab"></div>
-        </div>
-
-        <div class="lobby-label">
-            Look sensitivity
-            <span id="sens-value">1.0</span>
-        </div>
-
-        <input id="sens-slider" type="range" min="0.5" max="2.0" step="0.1" value="1.0" />
-
-        <button id="play-btn">DEPLOY</button>
+    <div class="lobby-label">Squad Colour</div>
+    <div id="color-row">
+      <div class="color-swatch" data-color="0xff5252" style="background:#ff5252"></div>
+      <div class="color-swatch" data-color="0x40c4ff" style="background:#40c4ff"></div>
+      <div class="color-swatch" data-color="0x69f0ae" style="background:#69f0ae"></div>
+      <div class="color-swatch" data-color="0xffeb3b" style="background:#ffeb3b"></div>
+      <div class="color-swatch" data-color="0xff80ab" style="background:#ff80ab"></div>
     </div>
+
+    <div class="lobby-label">
+      Look sensitivity
+      <span id="sens-value">1.0</span>
+    </div>
+    <input id="sens-slider" type="range" min="0.5" max="2.0" step="0.1" value="1.0" />
+
+    <button id="play-btn">DEPLOY</button>
+  </div>
 </div>
 
 <div id="info">KNUTSONFPS // DRAG RIGHT TO AIM // LEFT STICK TO MOVE</div>
@@ -336,7 +378,7 @@ canvas {
 <div id="hitmarker"></div>
 
 <div id="joy-move" class="joystick">
-    <div id="stick-move" class="stick"></div>
+  <div id="stick-move" class="stick"></div>
 </div>
 
 <div id="jump-btn">J</div>
@@ -354,15 +396,10 @@ canvas {
 <canvas id="game"></canvas>
 
 <script>
-
-// ===============================
-//  RAILWAY BACKEND URL
-// ===============================
+// RAILWAY BACKEND URL
 const BASE = "https://knutsonfps-backend-production.up.railway.app";
 
-// ===============================
-//  LOBBY STATE
-// ===============================
+// LOBBY STATE
 let playerName = "KnutsonFPS";
 let playerColor = 0x40c4ff;
 let lookSensitivity = 1.0;
@@ -388,21 +425,18 @@ colorSwatches.forEach(s => {
 });
 
 document.getElementById("play-btn").addEventListener("click", () => {
-    playerName = (nameInput.value.trim() || "KnutsonFPS");
+    const trimmed = nameInput.value.trim();
+    playerName = trimmed || "KnutsonFPS";
     lookSensitivity = parseFloat(sensSlider.value);
     lobby.style.display = "none";
 });
 
-// ===============================
-//  PLAYER ID
-// ===============================
+// PLAYER ID
 const PLAYER_ID = "p_" + Math.random().toString(36).slice(2);
 
-// ===============================
-//  THREE.JS SETUP
-// ===============================
+// THREE.JS SETUP
 const canvas = document.getElementById("game");
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 const scene = new THREE.Scene();
@@ -415,15 +449,16 @@ const camera = new THREE.PerspectiveCamera(
     1000
 );
 
-scene.add(new THREE.AmbientLight(0x404040));
+// Lighting
+const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambient);
 
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(5, 10, 7);
-scene.add(light);
+const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+sun.position.set(10, 20, 10);
+sun.castShadow = true;
+scene.add(sun);
 
-// ===============================
-//  MAP GEOMETRY
-// ===============================
+// MAP GEOMETRY
 const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(60, 60),
     new THREE.MeshPhongMaterial({ color: 0x263238 })
@@ -447,9 +482,7 @@ addWall(-10, 0, 1, 20, 0);
 addWall(10, 0, 1, 20, 0);
 addWall(0, 0, 6, 1, Math.PI / 4);
 
-// ===============================
-//  LOCAL PLAYER
-// ===============================
+// LOCAL PLAYER
 const player = new THREE.Object3D();
 player.position.set(0, 0.5, 0);
 scene.add(player);
@@ -477,24 +510,18 @@ function createCapsule(color) {
 const localCapsule = createCapsule(playerColor);
 player.add(localCapsule);
 
-// ===============================
-//  CAMERA ROTATION
-// ===============================
+// CAMERA ROTATION
 let yaw = 0;
 let pitch = 0;
 const pitchLimit = THREE.MathUtils.degToRad(40);
 
-// ===============================
-//  GRAVITY / JUMP
-// ===============================
+// GRAVITY / JUMP
 let velY = 0;
 const gravity = -20;
 const jumpSpeed = 8;
 let grounded = true;
 
-// ===============================
-//  SPRINT / STAMINA / HEALTH
-// ===============================
+// SPRINT / STAMINA / HEALTH
 let sprinting = false;
 let stamina = 1;
 const staminaDrain = 0.5;
@@ -504,9 +531,7 @@ const staminaBar = document.getElementById("stamina-bar");
 let health = 1;
 const healthBar = document.getElementById("health-bar");
 
-// ===============================
-//  VIEW MODE
-// ===============================
+// VIEW MODE
 let thirdPerson = false;
 const viewToggle = document.getElementById("view-toggle");
 
@@ -515,9 +540,7 @@ viewToggle.addEventListener("click", () => {
     viewToggle.textContent = "VIEW: " + (thirdPerson ? "3RD" : "1ST");
 });
 
-// ===============================
-//  OTHER PLAYERS
-// ===============================
+// OTHER PLAYERS
 const otherPlayers = new Map(); // id -> {obj, label, name, targetPos}
 
 function randomColor() {
@@ -533,16 +556,16 @@ function createNameLabel(text) {
     return el;
 }
 
-// ===============================
-//  MOVEMENT JOYSTICK
-// ===============================
+// MOVEMENT JOYSTICK
 function createJoystick(joyEl, stickEl, callback) {
     const max = 50;
     const center = 70;
     let fingerId = null;
 
     joyEl.addEventListener("touchstart", e => {
-        if (fingerId === null) fingerId = e.changedTouches[0].identifier;
+        if (fingerId === null && e.changedTouches.length > 0) {
+            fingerId = e.changedTouches[0].identifier;
+        }
     });
 
     joyEl.addEventListener("touchmove", e => {
@@ -551,16 +574,13 @@ function createJoystick(joyEl, stickEl, callback) {
                 const rect = joyEl.getBoundingClientRect();
                 let x = t.clientX - rect.left - center;
                 let y = t.clientY - rect.top - center;
-
                 const dist = Math.hypot(x, y);
                 if (dist > max) {
                     x = (x / dist) * max;
                     y = (y / dist) * max;
                 }
-
                 stickEl.style.left = (x + 40) + "px";
                 stickEl.style.top = (y + 40) + "px";
-
                 callback(x / max, y / max);
             }
         }
@@ -589,9 +609,7 @@ createJoystick(
     }
 );
 
-// ===============================
-//  LOOK: DRAG RIGHT SIDE
-// ===============================
+// LOOK: DRAG RIGHT SIDE
 let lookFinger = null;
 let lastLX = 0, lastLY = 0;
 
@@ -616,7 +634,6 @@ window.addEventListener("touchmove", e => {
 
             yaw += dx * sensitivity;
             pitch -= dy * sensitivity;
-
             pitch = Math.max(-pitchLimit, Math.min(pitchLimit, pitch));
 
             lastLX = t.clientX;
@@ -633,9 +650,21 @@ window.addEventListener("touchend", e => {
     }
 });
 
-// ===============================
-//  JUMP / SPRINT BUTTONS
-// ===============================
+// Prevent pinch-zoom / double-tap zoom
+document.addEventListener("gesturestart", e => e.preventDefault());
+document.addEventListener("gesturechange", e => e.preventDefault());
+document.addEventListener("gestureend", e => e.preventDefault());
+
+let lastTap = 0;
+window.addEventListener("touchend", e => {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+        e.preventDefault();
+    }
+    lastTap = now;
+}, { passive: false });
+
+// JUMP / SPRINT BUTTONS
 document.getElementById("jump-btn").addEventListener("touchstart", e => {
     if (grounded) {
         velY = jumpSpeed;
@@ -653,9 +682,8 @@ document.getElementById("sprint-btn").addEventListener("touchend", e => {
     sprinting = false;
     e.preventDefault();
 });
-// ===============================
-//  SHOOTING / HITMARKER
-// ===============================
+
+// SHOOTING / HITMARKER
 const shootBtn = document.getElementById("shoot-btn");
 const hitmarker = document.getElementById("hitmarker");
 
@@ -716,9 +744,7 @@ function shoot() {
     }
 }
 
-// ===============================
-//  GRENADE SYSTEM
-// ===============================
+// GRENADE SYSTEM
 class Grenade {
     constructor(position, direction) {
         this.mesh = new THREE.Mesh(
@@ -793,9 +819,7 @@ document.getElementById("grenade-btn").addEventListener("touchstart", e => {
     e.preventDefault();
 });
 
-// ===============================
-//  MOVEMENT + CAMERA
-// ===============================
+// MOVEMENT + CAMERA
 function updateMovement(dt) {
     const baseSpeed = 7;
     const sprintMult = 1.8;
@@ -870,9 +894,7 @@ function updateMovement(dt) {
     );
 }
 
-// ===============================
-//  HEALTH / RESPAWN
-// ===============================
+// HEALTH / RESPAWN
 function applyDamage(amount) {
     health -= amount;
 
@@ -891,9 +913,7 @@ function respawn() {
     healthBar.style.width = "100%";
 }
 
-// ===============================
-//  MULTIPLAYER NETWORKING
-// ===============================
+// MULTIPLAYER NETWORKING
 async function sendState() {
     fetch(`${BASE}/update`, {
         method: "POST",
@@ -976,9 +996,8 @@ function updateNameLabels() {
         entry.label.style.top = y + "px";
     });
 }
-// ===============================
-//  KILLFEED POLLING
-// ===============================
+
+// KILLFEED POLLING
 const killfeedEl = document.getElementById("killfeed");
 let lastFeed = "";
 
@@ -1002,9 +1021,7 @@ async function pollKillfeed() {
     }
 }
 
-// ===============================
-//  GAME LOOP
-// ===============================
+// GAME LOOP
 let lastTime = 0;
 
 function loop(t) {
@@ -1026,22 +1043,17 @@ function loop(t) {
 
 requestAnimationFrame(loop);
 
-// ===============================
-//  NETWORK TIMERS
-// ===============================
+// NETWORK TIMERS
 setInterval(sendState, 50);
 setInterval(getState, 50);
 setInterval(pollKillfeed, 1000);
 
-// ===============================
-//  RESIZE HANDLER
-// ===============================
+// RESIZE HANDLER
 window.addEventListener("resize", () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 });
-
 </script>
 </body>
 </html>
