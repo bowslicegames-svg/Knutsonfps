@@ -396,7 +396,7 @@ canvas {
 <canvas id="game"></canvas>
 
 <script>
-// RAILWAY BACKEND URL
+// BACKEND URL
 const BASE = "https://knutsonfps-backend-production.up.railway.app";
 
 // LOBBY STATE
@@ -422,13 +422,6 @@ colorSwatches.forEach(s => {
         s.classList.add("selected");
         playerColor = parseInt(s.dataset.color);
     });
-});
-
-document.getElementById("play-btn").addEventListener("click", () => {
-    const trimmed = nameInput.value.trim();
-    playerName = trimmed || "KnutsonFPS";
-    lookSensitivity = parseFloat(sensSlider.value);
-    lobby.style.display = "none";
 });
 
 // PLAYER ID
@@ -488,13 +481,15 @@ sun.position.set(10, 20, 10);
 sun.castShadow = true;
 scene.add(sun);
 
-// MAP GEOMETRY
+// MAP GEOMETRY — LARGER ARENA
 const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(60, 60),
+    new THREE.PlaneGeometry(120, 120),
     new THREE.MeshPhongMaterial({ color: 0x263238 })
 );
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
+
+const walls = [];
 
 function addWall(x, z, w, h, rot) {
     const wall = new THREE.Mesh(
@@ -503,14 +498,35 @@ function addWall(x, z, w, h, rot) {
     );
     wall.position.set(x, 1.5, z);
     wall.rotation.y = rot || 0;
+    wall.userData = { w, h };
     scene.add(wall);
+    walls.push(wall);
 }
 
-addWall(0, -10, 20, 1, 0);
-addWall(0, 10, 20, 1, 0);
-addWall(-10, 0, 1, 20, 0);
-addWall(10, 0, 1, 20, 0);
-addWall(0, 0, 6, 1, Math.PI / 4);
+// Outer walls
+addWall(0, -60, 120, 1, 0);
+addWall(0, 60, 120, 1, 0);
+addWall(-60, 0, 1, 120, 0);
+addWall(60, 0, 1, 120, 0);
+
+// Interior cover
+addWall(0, 0, 10, 1, 0);
+addWall(20, 10, 12, 1, Math.PI / 4);
+addWall(-25, -15, 8, 1, 0);
+
+// COLLISION CHECK
+function collidesWithWall(px, pz) {
+    for (const w of walls) {
+        const dx = Math.abs(px - w.position.x);
+        const dz = Math.abs(pz - w.position.z);
+
+        if (dx < w.userData.w / 2 + 0.5 &&
+            dz < w.userData.h / 2 + 0.5) {
+            return true;
+        }
+    }
+    return false;
+}
 
 // LOCAL PLAYER
 const player = new THREE.Object3D();
@@ -540,6 +556,31 @@ function createCapsule(color) {
 const localCapsule = createCapsule(playerColor);
 player.add(localCapsule);
 
+// SAFE SPAWNS
+const safeSpawns = [
+    { x: -40, z: -40 },
+    { x: 40,  z: -40 },
+    { x: -40, z: 40 },
+    { x: 40,  z: 40 },
+    { x: 0,   z: 0 }
+];
+
+function spawnPlayer() {
+    let spot = safeSpawns[Math.floor(Math.random() * safeSpawns.length)];
+    let attempts = 0;
+
+    while (collidesWithWall(spot.x, spot.z) && attempts < 20) {
+        spot = {
+            x: (Math.random() - 0.5) * 80,
+            z: (Math.random() - 0.5) * 80
+        };
+        attempts++;
+    }
+
+    player.position.set(spot.x, 0.5, spot.z);
+    velY = 0;
+}
+
 // CAMERA ROTATION
 let yaw = 0;
 let pitch = 0;
@@ -560,6 +601,7 @@ const staminaBar = document.getElementById("stamina-bar");
 
 let health = 1;
 const healthBar = document.getElementById("health-bar");
+let isDead = false;
 
 // VIEW MODE
 let thirdPerson = false;
@@ -696,7 +738,7 @@ window.addEventListener("touchend", e => {
 
 // JUMP / SPRINT BUTTONS
 document.getElementById("jump-btn").addEventListener("touchstart", e => {
-    if (grounded) {
+    if (grounded && !isDead) {
         velY = jumpSpeed;
         grounded = false;
     }
@@ -729,7 +771,7 @@ function showHitmarker() {
 }
 
 shootBtn.addEventListener("touchstart", e => {
-    if (shootCooldown <= 0) {
+    if (!isDead && shootCooldown <= 0) {
         shoot();
         shootCooldown = currentWeapon.fireRate;
     }
@@ -842,6 +884,8 @@ class Grenade {
 const grenades = [];
 
 function throwGrenade() {
+    if (isDead) return;
+
     const origin = player.position.clone();
     origin.y += 1.2;
 
@@ -861,6 +905,8 @@ document.getElementById("grenade-btn").addEventListener("touchstart", e => {
 
 // MOVEMENT + CAMERA
 function updateMovement(dt) {
+    if (isDead) return;
+
     const baseSpeed = 7;
     const sprintMult = 1.8;
 
@@ -889,8 +935,16 @@ function updateMovement(dt) {
     const dx = (strafe * cosY) + (forward * sinY);
     const dz = (strafe * sinY) - (forward * cosY);
 
-    player.position.x += dx * speed * dt;
-    player.position.z += dz * speed * dt;
+    // Proposed new position
+    const newX = player.position.x + dx * speed * dt;
+    const newZ = player.position.z + dz * speed * dt;
+
+    if (!collidesWithWall(newX, player.position.z)) {
+        player.position.x = newX;
+    }
+    if (!collidesWithWall(player.position.x, newZ)) {
+        player.position.z = newZ;
+    }
 
     velY += gravity * dt;
     player.position.y += velY * dt;
@@ -934,27 +988,27 @@ function updateMovement(dt) {
     );
 }
 
-// HEALTH / RESPAWN
+// HEALTH / DEATH → LOBBY
 function applyDamage(amount) {
+    if (isDead) return;
+
     health -= amount;
 
     if (health <= 0) {
         health = 0;
-        respawn();
+        healthBar.style.width = "0%";
+        isDead = true;
+        lobby.style.display = "flex";
+        return;
     }
 
     healthBar.style.width = (health * 100) + "%";
 }
 
-function respawn() {
-    player.position.set(0, 0.5, 0);
-    velY = 0;
-    health = 1;
-    healthBar.style.width = "100%";
-}
-
 // MULTIPLAYER NETWORKING
 async function sendState() {
+    if (isDead) return;
+
     fetch(`${BASE}/update`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1094,6 +1148,22 @@ window.addEventListener("resize", () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
+});
+
+// INITIAL SPAWN + LOBBY DEPLOY
+spawnPlayer();
+
+document.getElementById("play-btn").addEventListener("click", () => {
+    const trimmed = nameInput.value.trim();
+    playerName = trimmed || "KnutsonFPS";
+    lookSensitivity = parseFloat(sensSlider.value);
+
+    isDead = false;
+    health = 1;
+    healthBar.style.width = "100%";
+    spawnPlayer();
+
+    lobby.style.display = "none";
 });
 </script>
 </body>
