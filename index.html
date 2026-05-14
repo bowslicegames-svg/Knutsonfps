@@ -1496,8 +1496,30 @@ renderer.render(scene, camera);
 
 renderer.setAnimationLoop(loop);
 
-</script>
+/* -------------------------
 
-</body>
+ADDED GRENADE AND MULTIPLAYER REFINEMENTS
 
-</html>
+--------------------------*/
+
+// Grenade class class Grenade { constructor(position, direction) { this.mesh = new THREE.Mesh( new THREE.SphereGeometry(0.2, 12, 12), new THREE.MeshPhongMaterial({ color: 0x888888 }) ); this.mesh.position.copy(position); this.velocity = direction.clone().multiplyScalar(10); this.gravity = new THREE.Vector3(0, -30, 0); this.alive = true; this.timer = 3.0; // seconds before explosion scene.add(this.mesh); }
+
+update(dt) { if (!this.alive) return; this.velocity.add(this.gravity.clone().multiplyScalar(dt)); this.mesh.position.add(this.velocity.clone().multiplyScalar(dt)); this.timer -= dt; if (this.timer <= 0) { this.explode(); } }
+
+explode() { this.alive = false; scene.remove(this.mesh); // TODO: Add explosion effect and damage logic console.log("Grenade exploded at", this.mesh.position); } }
+
+const grenades = [];
+
+// Throw grenade function function throwGrenade() { const origin = camera.position.clone(); const dir = new THREE.Vector3(); camera.getWorldDirection(dir); const grenade = new Grenade(origin, dir); grenades.push(grenade); }
+
+// Add grenade throw to shoot button long press let grenadeThrowTimeout = null;
+
+shootBtn.addEventListener("touchstart", e => { if (shootCooldown <= 0) { shoot(); shootCooldown = 0.25; // Start grenade throw timer grenadeThrowTimeout = setTimeout(() => { throwGrenade(); grenadeThrowTimeout = null; }, 1000); // Hold 1 second to throw grenade } e.preventDefault(); });
+
+shootBtn.addEventListener("touchend", e => { if (grenadeThrowTimeout) { clearTimeout(grenadeThrowTimeout); grenadeThrowTimeout = null; } e.preventDefault(); });
+
+// Update grenades in main loop const originalLoop = loop; function loop(now) { const dt = (now - last) / 1000; last = now; if (shootCooldown > 0) shootCooldown -= dt; updateMovement(dt); updateNameLabels(); grenades.forEach(g => g.update(dt)); // Remove exploded grenades for (let i = grenades.length - 1; i >= 0; i--) { if (!grenades[i].alive) grenades.splice(i, 1); } renderer.render(scene, camera); } renderer.setAnimationLoop(loop);
+
+// Multiplayer refinements: smoother position updates function updateOtherPlayers(list) { const seen = new Set(); list.forEach(p => { if (p.id === PLAYER_ID) return; seen.add(p.id); let entry = otherPlayers.get(p.id); if (!entry) { const obj = createCapsule(randomColor()); scene.add(obj); const label = createNameLabel(p.name || "Player"); entry = { obj, label, name: p.name || "Player", targetPos: new THREE.Vector3(parseFloat(p.x), 0.5, parseFloat(p.z)) }; otherPlayers.set(p.id, entry); } else { entry.targetPos.set(parseFloat(p.x), 0.5, parseFloat(p.z)); if (p.name && p.name !== entry.name) { entry.name = p.name; entry.label.textContent = p.name; } } }); for (const [id, entry] of otherPlayers.entries()) { if (!seen.has(id)) { scene.remove(entry.obj); entry.label.remove(); otherPlayers.delete(id); } } }
+
+// Smoothly interpolate other players positions function updateNameLabels() { const width = window.innerWidth; const height = window.innerHeight; otherPlayers.forEach(entry => { // Smooth position interpolation entry.obj.position.lerp(entry.targetPos, 0.1); const pos = entry.obj.position.clone(); pos.y += 2.0; pos.project(camera); const x = (pos.x * 0.5 + 0.5) * width; const y = (-pos.y * 0.5 + 0.5) * height; entry.label.style.left = x + "px"; entry.label.style.top = y + "px"; }); }
