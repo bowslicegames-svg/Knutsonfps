@@ -52,7 +52,7 @@ canvas {
 }
 
 #lobby-panel {
-    width: 380px;
+    width: 360px;
     padding: 20px 24px;
     background: rgba(3, 6, 10, 0.95);
     border-radius: 10px;
@@ -90,8 +90,7 @@ canvas {
 
 .lobby-input,
 #name-input,
-#weapon-select,
-#join-code-input {
+#weapon-select {
     width: 100%;
     padding: 6px 8px;
     border-radius: 4px;
@@ -104,8 +103,7 @@ canvas {
 
 .lobby-input:focus,
 #name-input:focus,
-#weapon-select:focus,
-#join-code-input:focus {
+#weapon-select:focus {
     outline: none;
     border-color: #00e676;
 }
@@ -142,42 +140,24 @@ canvas {
     width: 100%;
 }
 
-#play-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 14px;
-}
-
-.lobby-btn {
-    flex: 1;
+#play-btn {
+    margin-top: 16px;
+    width: 100%;
     padding: 8px 0;
     border-radius: 4px;
     border: none;
     background: linear-gradient(90deg, #00c853, #64dd17);
     color: #000;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.16em;
     cursor: pointer;
 }
 
-.lobby-btn.secondary {
-    background: linear-gradient(90deg, #00b0ff, #00e5ff);
-}
-
-.lobby-btn:active {
+#play-btn:active {
     transform: translateY(1px);
     filter: brightness(0.9);
-}
-
-#lobby-code-display {
-    margin-top: 10px;
-    font-size: 11px;
-    text-align: center;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #b0bec5;
 }
 
 /* Joystick */
@@ -336,24 +316,6 @@ canvas {
     letter-spacing: 0.12em;
 }
 
-/* Exit button */
-#exit-btn {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    width: 26px;
-    height: 26px;
-    border-radius: 4px;
-    background: rgba(5, 10, 15, 0.9);
-    color: #cfd8dc;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(255, 82, 82, 0.7);
-    z-index: 15;
-}
-
 /* Name labels */
 .name-label {
     position: absolute;
@@ -424,15 +386,7 @@ canvas {
       <option value="pistol">Pistol</option>
     </select>
 
-    <div class="lobby-label">Join lobby by code (optional)</div>
-    <input id="join-code-input" placeholder="Leave empty for random lobby" />
-
-    <div id="play-row">
-      <button id="quick-play-btn" class="lobby-btn">RANDOM</button>
-      <button id="join-play-btn" class="lobby-btn secondary">JOIN</button>
-    </div>
-
-    <div id="lobby-code-display">Lobby code: <span id="lobby-code-text">NONE</span></div>
+    <button id="play-btn">DEPLOY</button>
   </div>
 </div>
 
@@ -454,7 +408,6 @@ canvas {
 <div id="health-container"><div id="health-bar"></div></div>
 
 <div id="view-toggle">VIEW: 1ST</div>
-<div id="exit-btn">×</div>
 
 <div id="killfeed" class="glass-feed"></div>
 
@@ -464,13 +417,13 @@ canvas {
 // BACKEND URL
 const BASE = "https://knutsonfps-backend.knutsonfps.deno.net";
 
-// LOBBY / MATCHMAKING STATE
+
+// LOBBY STATE
 let playerName = "KnutsonFPS";
 let playerColor = 0x40c4ff;
 let lookSensitivity = 1.0;
 let afkTimeout = 180; // seconds
 let selectedWeaponKey = "rifle";
-let currentLobbyId = "PUBLIC";
 
 const lobby = document.getElementById("lobby");
 const nameInput = document.getElementById("name-input");
@@ -479,10 +432,6 @@ const sensValue = document.getElementById("sens-value");
 const afkSlider = document.getElementById("afk-slider");
 const afkValue = document.getElementById("afk-value");
 const weaponSelect = document.getElementById("weapon-select");
-const joinCodeInput = document.getElementById("join-code-input");
-const quickPlayBtn = document.getElementById("quick-play-btn");
-const joinPlayBtn = document.getElementById("join-play-btn");
-const lobbyCodeText = document.getElementById("lobby-code-text");
 
 sensSlider.addEventListener("input", () => {
     sensValue.textContent = sensSlider.value;
@@ -495,7 +444,6 @@ afkSlider.addEventListener("input", () => {
 
 weaponSelect.addEventListener("change", () => {
     selectedWeaponKey = weaponSelect.value;
-    currentWeapon = weapons[selectedWeaponKey];
     if (localSoldier) {
         attachWeapon(localSoldier, selectedWeaponKey, playerColor);
     }
@@ -514,20 +462,6 @@ colorSwatches.forEach(s => {
         }
     });
 });
-
-function randomLobbyCode() {
-    const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-    let code = "";
-    for (let i = 0; i < 4; i++) {
-        code += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return code;
-}
-
-function setLobbyCode(code) {
-    currentLobbyId = code;
-    lobbyCodeText.textContent = code;
-}
 
 // PLAYER ID
 const PLAYER_ID = "p_" + Math.random().toString(36).slice(2);
@@ -736,9 +670,8 @@ function createWeaponMesh(type, color) {
         group.add(body, barrel, grip);
     }
 
-    // rotate so barrel points forward (-Z in soldier space)
-    group.rotation.y = Math.PI / 2;
-    group.position.set(0.15, -0.05, 0.25);
+    group.position.set(0.35, 0, 0.12);
+    group.rotation.z = -0.2;
     return group;
 }
 
@@ -812,12 +745,6 @@ viewToggle.addEventListener("click", () => {
     thirdPerson = !thirdPerson;
     viewToggle.textContent = "VIEW: " + (thirdPerson ? "3RD" : "1ST");
     localSoldier.visible = thirdPerson;
-});
-
-// EXIT BUTTON
-document.getElementById("exit-btn").addEventListener("click", () => {
-    isDead = true;
-    lobby.style.display = "flex";
 });
 
 // OTHER PLAYERS
@@ -1037,8 +964,7 @@ function shoot() {
                 body: JSON.stringify({
                     attacker: PLAYER_ID,
                     target: targetId,
-                    amount: currentWeapon.damage,
-                    lobby: currentLobbyId
+                    amount: currentWeapon.damage
                 })
             });
         }
@@ -1100,8 +1026,7 @@ class Grenade {
                     body: JSON.stringify({
                         attacker: PLAYER_ID,
                         target: id,
-                        amount: dmg,
-                        lobby: currentLobbyId
+                        amount: dmg
                     })
                 });
             }
@@ -1111,7 +1036,7 @@ class Grenade {
         const selfDist = player.position.distanceTo(pos);
         if (selfDist < radius) {
             const selfDmg = Math.round(55 * (1 - selfDist / radius));
-            applyDamage(selfDmg / 100);
+            applyDamage(selfDmg / 100); // convert to 0–1 health fraction
         }
 
         spawnExplosionEffect(pos);
@@ -1157,7 +1082,7 @@ function throwGrenade() {
     camera.getWorldDirection(dir);
 
     dir.normalize().multiplyScalar(16);
-    dir.y += 6; // arc
+    dir.y += 6; // extra upward for nice arc
 
     const g = new Grenade(origin, dir);
     grenades.push(g);
@@ -1358,18 +1283,13 @@ async function sendState() {
             y: player.position.y,
             z: player.position.z,
             name: playerName,
-            hp: Math.round(health * 100),
-            lobby: currentLobbyId
+            hp: Math.round(health * 100)
         })
     });
 }
 
 async function getState() {
-    const res = await fetch(`${BASE}/get_state`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lobby: currentLobbyId })
-    });
+    const res = await fetch(`${BASE}/get_state`);
     const list = await res.json();
     updateOtherPlayers(list);
 }
@@ -1445,11 +1365,7 @@ let lastFeed = "";
 
 async function pollKillfeed() {
     try {
-        const res = await fetch(`${BASE}/feed`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ lobby: currentLobbyId })
-        });
+        const res = await fetch(`${BASE}/feed`);
         const events = await res.json();
         const json = JSON.stringify(events);
 
@@ -1523,39 +1439,10 @@ window.addEventListener("resize", () => {
 spawnPlayer();
 localSoldier.visible = thirdPerson;
 
-// UNIQUE NAME CHECK (no two players same name)
-async function ensureUniqueName(baseName) {
-    try {
-        const res = await fetch(`${BASE}/get_state`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ lobby: currentLobbyId })
-        });
-        const list = await res.json();
-        const existing = new Set(list.map(p => p.name));
-
-        if (!existing.has(baseName)) return baseName;
-
-        let i = 2;
-        let candidate = `${baseName}${i}`;
-        while (existing.has(candidate)) {
-            i++;
-            candidate = `${baseName}${i}`;
-        }
-        return candidate;
-    } catch {
-        return baseName;
-    }
-}
-
-// DEPLOY HANDLERS
-async function deployToLobby(code) {
-    setLobbyCode(code);
-
+// DEPLOY BUTTON (LOBBY → GAME)
+document.getElementById("play-btn").addEventListener("click", () => {
     const trimmed = nameInput.value.trim();
-    const baseName = trimmed || "KnutsonFPS";
-    playerName = await ensureUniqueName(baseName);
-
+    playerName = trimmed || "KnutsonFPS";
     lookSensitivity = parseFloat(sensSlider.value);
     afkTimeout = parseInt(afkSlider.value, 10);
     afkValue.textContent = afkTimeout.toString();
@@ -1573,16 +1460,6 @@ async function deployToLobby(code) {
     localSoldier.visible = thirdPerson;
 
     lobby.style.display = "none";
-}
-
-quickPlayBtn.addEventListener("click", async () => {
-    const code = randomLobbyCode();
-    await deployToLobby(code);
-});
-
-joinPlayBtn.addEventListener("click", async () => {
-    const code = joinCodeInput.value.trim().toUpperCase() || randomLobbyCode();
-    await deployToLobby(code);
 });
 </script>
 </body>
