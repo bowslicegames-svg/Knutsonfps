@@ -1350,25 +1350,15 @@ NETWORKING (POSITION ONLY)
 
 --------------------------*/
 
-async function sendState() {
+async function sendState() { const body = new URLSearchParams(); body.append("id", PLAYER_ID); body.append("x", player.position.x); body.append("y", player.position.y); body.append("z", player.position.z); body.append("name", playerName);
 
-const body = new URLSearchParams();
+fetch("https://knutsonfps.infinityfreeapp.com/update.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body
+});
 
-body.append("id", PLAYER_ID);
-
-body.append("x", player.position.x);
-
-body.append("y", player.position.y);
-
-body.append("z", player.position.z);
-
-// backend unchanged: only position
-
-fetch("update.php", {
-
-method: "POST",
-
-headers: { "Content-Type": "application/x-www-form-urlencoded" },
+},
 
 body
 
