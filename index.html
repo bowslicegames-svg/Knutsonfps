@@ -2,34 +2,87 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>KnutsonFPS</title>
+<title>KnutsonFPS – Tactical Glass UI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-    body,html { margin:0; padding:0; overflow:hidden; background:#000; }
+    body,html {
+        margin:0; padding:0; overflow:hidden;
+        background:#0a0f14;
+        font-family:Arial, sans-serif;
+    }
+
+    /* ============================
+       TACTICAL GLASS UI STYLING
+    ============================ */
+    .glass {
+        backdrop-filter: blur(10px);
+        background: rgba(0, 40, 70, 0.35);
+        border: 1px solid rgba(0,150,255,0.25);
+        box-shadow: 0 0 12px rgba(0,150,255,0.25);
+    }
+
     #killfeed {
         position:absolute; top:20px; right:20px;
-        color:white; font-family:Arial; font-size:14px;
+        width:200px; padding:10px;
+        color:#bfeaff; font-size:14px;
         text-align:right; pointer-events:none;
     }
-    #joystick { position:absolute; bottom:40px; left:40px; }
+
+    #crosshair {
+        position:absolute; top:50%; left:50%;
+        width:20px; height:20px;
+        transform:translate(-50%, -50%);
+        border:2px solid rgba(0,150,255,0.7);
+        border-radius:50%;
+        box-shadow:0 0 10px rgba(0,150,255,0.5);
+    }
+
+    /* Joystick */
+    #joystickBase {
+        position:absolute; bottom:40px; left:40px;
+        width:140px; height:140px; border-radius:50%;
+    }
+    #joystickStick {
+        position:absolute; width:70px; height:70px;
+        border-radius:50%;
+        top:35px; left:35px;
+        background:rgba(0,150,255,0.4);
+        border:2px solid rgba(0,150,255,0.8);
+        box-shadow:0 0 12px rgba(0,150,255,0.5);
+    }
+
+    /* Fire button */
     #fireBtn {
         position:absolute; bottom:60px; right:40px;
-        width:80px; height:80px; border-radius:50%;
-        background:rgba(255,0,0,0.4); border:2px solid red;
+        width:90px; height:90px; border-radius:50%;
+        background:rgba(255,60,60,0.35);
+        border:2px solid rgba(255,80,80,0.8);
+        box-shadow:0 0 12px rgba(255,60,60,0.5);
     }
+
+    /* Grenade button */
     #grenadeBtn {
-        position:absolute; bottom:160px; right:40px;
-        width:70px; height:70px; border-radius:50%;
-        background:rgba(0,150,255,0.4); border:2px solid #09f;
+        position:absolute; bottom:170px; right:40px;
+        width:75px; height:75px; border-radius:50%;
+        background:rgba(0,150,255,0.35);
+        border:2px solid rgba(0,150,255,0.8);
+        box-shadow:0 0 12px rgba(0,150,255,0.5);
     }
 </style>
 </head>
 <body>
 
-<div id="killfeed"></div>
-<div id="joystick"></div>
-<button id="fireBtn"></button>
-<button id="grenadeBtn"></button>
+<div id="crosshair"></div>
+
+<div id="killfeed" class="glass"></div>
+
+<div id="joystickBase" class="glass">
+    <div id="joystickStick"></div>
+</div>
+
+<button id="fireBtn" class="glass"></button>
+<button id="grenadeBtn" class="glass"></button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -37,7 +90,7 @@
 /* ============================================================
    CONFIG
 ============================================================ */
-const BASE = "https://YOUR-RAILWAY-URL.up.railway.app";   // <--- CHANGE THIS
+const BASE = "https://YOUR-RAILWAY-URL.up.railway.app";  // <--- CHANGE THIS
 const PLAYER_ID = "p_" + Math.random().toString(36).slice(2);
 let health = 1;
 
@@ -45,7 +98,7 @@ let health = 1;
    THREE.JS SETUP
 ============================================================ */
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x202020);
+scene.background = new THREE.Color(0x0a0f14);
 
 const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 500);
 camera.position.set(0, 1.6, 5);
@@ -56,7 +109,7 @@ document.body.appendChild(renderer.domElement);
 
 const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(200,200),
-    new THREE.MeshBasicMaterial({ color:0x333333 })
+    new THREE.MeshBasicMaterial({ color:0x111111 })
 );
 floor.rotation.x = -Math.PI/2;
 scene.add(floor);
@@ -66,7 +119,6 @@ scene.add(floor);
 ============================================================ */
 const player = {
     obj: new THREE.Object3D(),
-    vel: new THREE.Vector3(),
     speed: 0.08
 };
 scene.add(player.obj);
@@ -86,7 +138,7 @@ const otherPlayers = new Map();
 function spawnRemote(id) {
     const g = new THREE.Mesh(
         new THREE.CapsuleGeometry(0.3,1.2,4,8),
-        new THREE.MeshBasicMaterial({ color:0x00ffcc })
+        new THREE.MeshBasicMaterial({ color:0x00c8ff })
     );
     scene.add(g);
     otherPlayers.set(id, { obj:g });
@@ -253,30 +305,36 @@ async function pollFeed() {
 }
 
 /* ============================================================
-   JOYSTICK (simple)
+   JOYSTICK
 ============================================================ */
-let joyActive = false;
-let joyStartX = 0;
-let joyStartY = 0;
+const base = document.getElementById("joystickBase");
+const stick = document.getElementById("joystickStick");
 
-document.getElementById("joystick").addEventListener("touchstart", e => {
+let joyActive = false;
+let startX = 0, startY = 0;
+
+base.addEventListener("touchstart", e => {
     joyActive = true;
-    joyStartX = e.touches[0].clientX;
-    joyStartY = e.touches[0].clientY;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
 });
 
 document.addEventListener("touchmove", e => {
     if (!joyActive) return;
-    const dx = e.touches[0].clientX - joyStartX;
-    const dy = e.touches[0].clientY - joyStartY;
-    moveX = dx / 200;
-    moveZ = dy / 200;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+
+    moveX = dx / 120;
+    moveZ = dy / 120;
+
+    stick.style.transform = `translate(${dx/3}px, ${dy/3}px)`;
 });
 
 document.addEventListener("touchend", () => {
     joyActive = false;
     moveX = 0;
     moveZ = 0;
+    stick.style.transform = "translate(0,0)";
 });
 
 /* ============================================================
