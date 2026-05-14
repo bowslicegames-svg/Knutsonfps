@@ -52,7 +52,7 @@ canvas {
 }
 
 #lobby-panel {
-    width: 340px;
+    width: 360px;
     padding: 20px 24px;
     background: rgba(3, 6, 10, 0.95);
     border-radius: 10px;
@@ -89,7 +89,8 @@ canvas {
 }
 
 .lobby-input,
-#name-input {
+#name-input,
+#weapon-select {
     width: 100%;
     padding: 6px 8px;
     border-radius: 4px;
@@ -101,7 +102,8 @@ canvas {
 }
 
 .lobby-input:focus,
-#name-input:focus {
+#name-input:focus,
+#weapon-select:focus {
     outline: none;
     border-color: #00e676;
 }
@@ -376,6 +378,14 @@ canvas {
     </div>
     <input id="afk-slider" type="range" min="60" max="600" step="30" value="180" />
 
+    <div class="lobby-label">Primary weapon</div>
+    <select id="weapon-select">
+      <option value="rifle">Rifle</option>
+      <option value="smg">SMG</option>
+      <option value="shotgun">Shotgun</option>
+      <option value="pistol">Pistol</option>
+    </select>
+
     <button id="play-btn">DEPLOY</button>
   </div>
 </div>
@@ -412,6 +422,7 @@ let playerName = "KnutsonFPS";
 let playerColor = 0x40c4ff;
 let lookSensitivity = 1.0;
 let afkTimeout = 180; // seconds
+let selectedWeaponKey = "rifle";
 
 const lobby = document.getElementById("lobby");
 const nameInput = document.getElementById("name-input");
@@ -419,6 +430,7 @@ const sensSlider = document.getElementById("sens-slider");
 const sensValue = document.getElementById("sens-value");
 const afkSlider = document.getElementById("afk-slider");
 const afkValue = document.getElementById("afk-value");
+const weaponSelect = document.getElementById("weapon-select");
 
 sensSlider.addEventListener("input", () => {
     sensValue.textContent = sensSlider.value;
@@ -429,6 +441,13 @@ afkSlider.addEventListener("input", () => {
     afkTimeout = parseInt(afkSlider.value, 10);
 });
 
+weaponSelect.addEventListener("change", () => {
+    selectedWeaponKey = weaponSelect.value;
+    if (localSoldier) {
+        attachWeapon(localSoldier, selectedWeaponKey, playerColor);
+    }
+});
+
 const colorSwatches = Array.from(document.querySelectorAll(".color-swatch"));
 colorSwatches[1].classList.add("selected");
 
@@ -437,6 +456,9 @@ colorSwatches.forEach(s => {
         colorSwatches.forEach(x => x.classList.remove("selected"));
         s.classList.add("selected");
         playerColor = parseInt(s.dataset.color);
+        if (localSoldier) {
+            updateSoldierColor(localSoldier, playerColor);
+        }
     });
 });
 
@@ -467,6 +489,13 @@ const weapons = {
         fireRate: 0.6,
         recoil: 0.03,
         range: 25
+    },
+    pistol: {
+        name: "Pistol",
+        damage: 10,
+        fireRate: 0.18,
+        recoil: 0.02,
+        range: 40
     }
 };
 
@@ -586,14 +615,79 @@ function createSoldier(color) {
         torso, head, armL, armR, legL, legR,
         animState: "idle",
         animTime: 0,
-        shootTimer: 0
+        shootTimer: 0,
+        throwTimer: 0,
+        weapon: null
     };
 
     return group;
 }
 
+function updateSoldierColor(soldier, color) {
+    soldier.traverse(obj => {
+        if (obj.isMesh) {
+            obj.material.color.setHex(color);
+        }
+    });
+}
+
+// BLOCKY TACTICAL WEAPONS
+function createWeaponMesh(type, color) {
+    const group = new THREE.Group();
+    const bodyMat = new THREE.MeshPhongMaterial({ color: 0x212121 });
+    const accentMat = new THREE.MeshPhongMaterial({ color });
+
+    if (type === "rifle") {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.18, 0.18), bodyMat);
+        body.position.set(0.45, 0, 0);
+        const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.08), bodyMat);
+        barrel.position.set(0.95, 0, 0);
+        const mag = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.25, 0.12), accentMat);
+        mag.position.set(0.3, -0.18, 0);
+        group.add(body, barrel, mag);
+    } else if (type === "smg") {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.2, 0.2), bodyMat);
+        body.position.set(0.3, 0, 0);
+        const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.08, 0.08), bodyMat);
+        barrel.position.set(0.7, 0, 0);
+        const mag = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.22, 0.12), accentMat);
+        mag.position.set(0.15, -0.18, 0);
+        group.add(body, barrel, mag);
+    } else if (type === "shotgun") {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.2, 0.2), bodyMat);
+        body.position.set(0.55, 0, 0);
+        const barrel = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 0.12), bodyMat);
+        barrel.position.set(0.6, 0.12, 0);
+        group.add(body, barrel);
+    } else if (type === "pistol") {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.18, 0.18), bodyMat);
+        body.position.set(0.2, 0, 0);
+        const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.08, 0.08), bodyMat);
+        barrel.position.set(0.5, 0.02, 0);
+        const grip = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.25, 0.16), accentMat);
+        grip.position.set(0.05, -0.2, 0);
+        group.add(body, barrel, grip);
+    }
+
+    group.position.set(0.35, 0, 0.12);
+    group.rotation.z = -0.2;
+    return group;
+}
+
+function attachWeapon(soldier, weaponKey, color) {
+    const ud = soldier.userData;
+    if (ud.weapon) {
+        ud.armR.remove(ud.weapon);
+        ud.weapon = null;
+    }
+    const mesh = createWeaponMesh(weaponKey, color);
+    ud.armR.add(mesh);
+    ud.weapon = mesh;
+}
+
 let localSoldier = createSoldier(playerColor);
 player.add(localSoldier);
+attachWeapon(localSoldier, selectedWeaponKey, playerColor);
 
 // SAFE SPAWNS
 const safeSpawns = [
@@ -649,6 +743,7 @@ const viewToggle = document.getElementById("view-toggle");
 viewToggle.addEventListener("click", () => {
     thirdPerson = !thirdPerson;
     viewToggle.textContent = "VIEW: " + (thirdPerson ? "3RD" : "1ST");
+    localSoldier.visible = thirdPerson;
 });
 
 // OTHER PLAYERS
@@ -840,7 +935,6 @@ function shoot() {
     const dir = new THREE.Vector3();
     camera.getWorldDirection(dir);
 
-    // apply recoil kick
     dir.y -= recoilKick;
 
     const ray = new THREE.Raycaster(origin, dir, 0, currentWeapon.range);
@@ -876,21 +970,19 @@ function shoot() {
     }
 
     recoilKick += currentWeapon.recoil;
-
-    // local shoot animation
     localSoldier.userData.shootTimer = 0.12;
 }
 
-// GRENADE SYSTEM
+// GRENADE SYSTEM + EXPLOSION EFFECT
 class Grenade {
     constructor(position, direction) {
         this.mesh = new THREE.Mesh(
             new THREE.SphereGeometry(0.25, 12, 12),
-            new THREE.MeshPhongMaterial({ color: 0x888888 })
+            new THREE.MeshPhongMaterial({ color: 0xffc107 })
         );
         this.mesh.position.copy(position);
 
-        this.velocity = direction.clone(); // already scaled
+        this.velocity = direction.clone();
         this.gravity = new THREE.Vector3(0, -25, 0);
 
         this.alive = true;
@@ -919,10 +1011,14 @@ class Grenade {
         this.exploded = true;
         this.alive = false;
 
+        const pos = this.mesh.position.clone();
+        const radius = 4;
+
+        // damage other players
         otherPlayers.forEach((entry, id) => {
-            const dist = entry.obj.position.distanceTo(this.mesh.position);
-            if (dist < 3) {
-                const dmg = Math.round(45 * (1 - dist / 3));
+            const dist = entry.obj.position.distanceTo(pos);
+            if (dist < radius) {
+                const dmg = Math.round(55 * (1 - dist / radius));
                 fetch(`${BASE}/damage`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -935,11 +1031,45 @@ class Grenade {
             }
         });
 
+        // damage self
+        const selfDist = player.position.distanceTo(pos);
+        if (selfDist < radius) {
+            const selfDmg = Math.round(55 * (1 - selfDist / radius));
+            applyDamage(selfDmg / 100); // convert to 0–1 health fraction
+        }
+
+        spawnExplosionEffect(pos);
+
         scene.remove(this.mesh);
     }
 }
 
 const grenades = [];
+
+function spawnExplosionEffect(position) {
+    const geo = new THREE.SphereGeometry(0.5, 16, 16);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xfff176, transparent: true, opacity: 0.8 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.copy(position);
+    scene.add(mesh);
+
+    const start = performance.now();
+    const duration = 250;
+
+    function animateExplosion(t) {
+        const elapsed = t - start;
+        const k = elapsed / duration;
+        if (k >= 1) {
+            scene.remove(mesh);
+            return;
+        }
+        const s = 1 + k * 3;
+        mesh.scale.set(s, s, s);
+        mesh.material.opacity = 0.8 * (1 - k);
+        requestAnimationFrame(animateExplosion);
+    }
+    requestAnimationFrame(animateExplosion);
+}
 
 function throwGrenade() {
     if (isDead) return;
@@ -950,10 +1080,13 @@ function throwGrenade() {
     const dir = new THREE.Vector3();
     camera.getWorldDirection(dir);
 
-    dir.normalize().multiplyScalar(18);
+    dir.normalize().multiplyScalar(16);
+    dir.y += 6; // extra upward for nice arc
 
     const g = new Grenade(origin, dir);
     grenades.push(g);
+
+    localSoldier.userData.throwTimer = 0.25;
 }
 
 document.getElementById("grenade-btn").addEventListener("touchstart", e => {
@@ -994,7 +1127,6 @@ function updateMovement(dt) {
     const dx = (strafe * cosY) + (forward * sinY);
     const dz = (strafe * sinY) - (forward * cosY);
 
-    // Proposed new position
     const newX = player.position.x + dx * speed * dt;
     const newZ = player.position.z + dz * speed * dt;
 
@@ -1013,6 +1145,9 @@ function updateMovement(dt) {
         velY = 0;
         grounded = true;
     }
+
+    // full-body rotation with camera yaw
+    player.rotation.y = yaw;
 
     const camHeight = 1.4;
 
@@ -1046,7 +1181,6 @@ function updateMovement(dt) {
         camera.position.z + dir.z
     );
 
-    // update local anim state
     const speed2D = Math.sqrt(dx * dx + dz * dz) / dt;
     const ud = localSoldier.userData;
     if (!grounded) {
@@ -1073,7 +1207,6 @@ function updateSoldierAnimation(soldier, dt) {
     const head = ud.head;
     const torso = ud.torso;
 
-    // reset
     armL.rotation.set(0, 0, 0);
     armR.rotation.set(0, 0, 0);
     legL.rotation.set(0, 0, 0);
@@ -1085,6 +1218,12 @@ function updateSoldierAnimation(soldier, dt) {
         ud.shootTimer -= dt;
         armR.rotation.x -= 0.6;
         torso.rotation.y += 0.1;
+    }
+
+    if (ud.throwTimer > 0) {
+        ud.throwTimer -= dt;
+        armR.rotation.x = -1.0 + (ud.throwTimer * 4);
+        armL.rotation.x = -0.3;
     }
 
     if (ud.animState === "idle") {
@@ -1114,10 +1253,10 @@ function updateSoldierAnimation(soldier, dt) {
 }
 
 // HEALTH / DEATH → LOBBY
-function applyDamage(amount) {
+function applyDamage(amountFraction) {
     if (isDead) return;
 
-    health -= amount;
+    health -= amountFraction;
 
     if (health <= 0) {
         health = 0;
@@ -1166,6 +1305,7 @@ function updateOtherPlayers(list) {
 
         if (!entry) {
             const obj = createSoldier(randomColor());
+            attachWeapon(obj, "rifle", 0x40c4ff);
             scene.add(obj);
 
             const label = createNameLabel(p.name || "Player");
@@ -1252,7 +1392,6 @@ function loop(t) {
     shootCooldown -= dt;
     recoilKick *= 0.85;
 
-    // AFK kick
     if (!isDead && (performance.now() - lastActive) / 1000 > afkTimeout) {
         isDead = true;
         lobby.style.display = "flex";
@@ -1262,10 +1401,8 @@ function loop(t) {
 
     grenades.forEach(g => g.update(dt));
 
-    // animate local soldier
     updateSoldierAnimation(localSoldier, dt);
 
-    // animate others based on movement
     otherPlayers.forEach(entry => {
         const obj = entry.obj;
         const ud = obj.userData;
@@ -1299,6 +1436,7 @@ window.addEventListener("resize", () => {
 
 // INITIAL SPAWN
 spawnPlayer();
+localSoldier.visible = thirdPerson;
 
 // DEPLOY BUTTON (LOBBY → GAME)
 document.getElementById("play-btn").addEventListener("click", () => {
@@ -1307,12 +1445,18 @@ document.getElementById("play-btn").addEventListener("click", () => {
     lookSensitivity = parseFloat(sensSlider.value);
     afkTimeout = parseInt(afkSlider.value, 10);
     afkValue.textContent = afkTimeout.toString();
+    selectedWeaponKey = weaponSelect.value;
+    currentWeapon = weapons[selectedWeaponKey];
 
     isDead = false;
     health = 1;
     healthBar.style.width = "100%";
     spawnPlayer();
     markActive();
+
+    updateSoldierColor(localSoldier, playerColor);
+    attachWeapon(localSoldier, selectedWeaponKey, playerColor);
+    localSoldier.visible = thirdPerson;
 
     lobby.style.display = "none";
 });
