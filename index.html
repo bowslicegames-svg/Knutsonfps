@@ -463,10 +463,10 @@ const PLAYER_ID = "p_" + Math.random().toString(36).slice(2);
 
 // WEAPON SYSTEM
 const weapons = {
-  rifle: { name: "Rifle", damage: 12, fireRate: 0.12, recoil: 0.012, range: 60 },
-  smg:   { name: "SMG",   damage: 7,  fireRate: 0.07, recoil: 0.008, range: 45 },
-  shotgun: { name: "Shotgun", damage: 8, pellets: 6, spread: 0.12, fireRate: 0.6, recoil: 0.03, range: 25 },
-  pistol: { name: "Pistol", damage: 10, fireRate: 0.18, recoil: 0.02, range: 40 }
+  rifle:   { name: "Rifle",   damage: 12, fireRate: 0.12, recoil: 0.012, range: 60 },
+  smg:     { name: "SMG",     damage: 7,  fireRate: 0.07, recoil: 0.008, range: 45 },
+  shotgun: { name: "Shotgun", damage: 8,  pellets: 6, spread: 0.12, fireRate: 0.6, recoil: 0.03, range: 25 },
+  pistol:  { name: "Pistol",  damage: 10, fireRate: 0.18, recoil: 0.02, range: 40 }
 };
 
 let currentWeapon = weapons.rifle;
@@ -911,7 +911,7 @@ function shoot() {
           target: targetId,
           amount: currentWeapon.damage
         })
-      });
+      }).catch(() => {});
     }
   }
 
@@ -967,7 +967,7 @@ class Grenade {
             target: id,
             amount: dmg
           })
-        });
+        }).catch(() => {});
       }
     });
 
@@ -1110,6 +1110,19 @@ function updateMovement(dt) {
     camera.position.y + dir.y,
     camera.position.z + dir.z
   );
+
+  // ANIM STATE
+  const speed2D = Math.sqrt(dx * dx + dz * dz) / Math.max(dt, 0.0001);
+  const ud = localSoldier.userData;
+  if (!grounded) {
+    ud.animState = "jump";
+  } else if (speed2D > 6) {
+    ud.animState = "run";
+  } else if (speed2D > 0.5) {
+    ud.animState = "walk";
+  } else {
+    ud.animState = "idle";
+  }
 }
 
 // HEALTH / DEATH
@@ -1129,37 +1142,76 @@ function applyDamage(amountFraction) {
 // MULTIPLAYER NETWORKING
 async function sendState() {
   if (isDead) return;
-  fetch(BASE + "/update", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id: PLAYER_ID,
-      x: player.position.x,
-      y: player.position.y,
-      z: player.position.z,
-      name: playerName,
-      hp: Math.round(health * 100)
-    })
-  });
+  try {
+    const res = await fetch(BASE + "/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: PLAYER_ID,
+        x: player.position.x,
+        y: player.position.y,
+        z: player.position.z,
+        name: playerName,
+        hp: Math.round(health * 100)
+      })
+    });
+    if (!res.ok) {
+      console.log("UPDATE FAIL", res.status);
+    }
+  } catch (err) {
+    console.log("UPDATE ERROR", err);
+  }
 }
 
 async function getState() {
-  const res = await fetch(BASE + "/get_state", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({})
-  });
-  const list = await res.json();
-  updateOtherPlayers(list);
+  try {
+    let res = await fetch(BASE + "/get_state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({})
+    });
+    let data = await res.json();
+
+    let list;
+    if (Array.isArray(data)) {
+      list = data;
+    } else if (data && data.players) {
+      list = Object.values(data.players);
+    } else {
+      list = [];
+    }
+
+    updateOtherPlayers(list);
+  } catch (e) {
+    try {
+      const res2 = await fetch(BASE + "/get_state");
+      const data2 = await res2.json();
+      let list;
+      if (Array.isArray(data2)) {
+        list = data2;
+      } else if (data2 && data2.players) {
+        list = Object.values(data2.players);
+      } else {
+        list = [];
+      }
+      updateOtherPlayers(list);
+    } catch (_) {
+      // ignore
+    }
+  }
 }
 
 function updateOtherPlayers(list) {
   const seen = new Set();
   list.forEach(p => {
+    if (!p || !p.id) return;
     if (p.id === PLAYER_ID) return;
     seen.add(p.id);
 
     let entry = otherPlayers.get(p.id);
+    const px = parseFloat(p.x);
+    const pz = parseFloat(p.z);
+
     if (!entry) {
       const obj = createSoldier(randomColor());
       attachWeapon(obj, "rifle", 0x40c4ff);
@@ -1169,13 +1221,13 @@ function updateOtherPlayers(list) {
         obj,
         label,
         name: p.name || "Player",
-        targetPos: new THREE.Vector3(parseFloat(p.x), 0.5, parseFloat(p.z)),
-        lastPos: new THREE.Vector3(parseFloat(p.x), 0.5, parseFloat(p.z))
+        targetPos: new THREE.Vector3(px, 0.5, pz),
+        lastPos: new THREE.Vector3(px, 0.5, pz)
       };
       otherPlayers.set(p.id, entry);
     } else {
       entry.lastPos.copy(entry.targetPos);
-      entry.targetPos.set(parseFloat(p.x), 0.5, parseFloat(p.z));
+      entry.targetPos.set(px, 0.5, pz);
       if (p.name && p.name !== entry.name) {
         entry.name = p.name;
         entry.label.textContent = p.name;
@@ -1230,7 +1282,7 @@ async function pollKillfeed() {
       killfeedEl.appendChild(div);
     });
   } catch (e) {
-    console.warn("Killfeed error:", e);
+    // ignore
   }
 }
 
