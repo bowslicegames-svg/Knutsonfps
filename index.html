@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>KnutsonFPS - Tactical Multiplayer</title>
+  <title>KnutsonFPS - Clean Build</title>
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
   <style>
     html,body{
       margin:0;padding:0;overflow:hidden;
@@ -15,16 +16,6 @@
     }
     canvas{width:100vw;height:100vh;display:block}
 
-    #info{
-      position:absolute;top:10px;left:10px;z-index:20;
-      background:rgba(5,10,15,.85);
-      padding:6px 10px;border-radius:4px;
-      font-size:11px;color:#cfd8dc;
-      border:1px solid rgba(0,255,128,.25);
-      letter-spacing:.08em;text-transform:uppercase;
-    }
-
-    /* Single lobby */
     #lobby{
       position:absolute;inset:0;
       background:radial-gradient(circle at top,#151b22 0,#050608 60%);
@@ -35,8 +26,8 @@
       width:360px;padding:20px 24px;
       background:rgba(3,6,10,.95);
       border-radius:10px;color:#eceff1;
-      box-shadow:0 0 30px rgba(0,0,0,.9);
       border:1px solid rgba(0,255,128,.25);
+      box-shadow:0 0 30px rgba(0,0,0,.9);
     }
     #lobby-title{
       font-size:22px;margin-bottom:4px;text-align:center;
@@ -50,30 +41,30 @@
       font-size:12px;margin-top:10px;margin-bottom:4px;
       text-transform:uppercase;letter-spacing:.12em;color:#90a4ae;
     }
-    .lobby-input,#name-input,#weapon-select{
+    .lobby-input{
       width:100%;padding:6px 8px;border-radius:4px;
       border:1px solid #263238;background:#11171d;
       color:#eceff1;box-sizing:border-box;font-size:13px;
     }
-    .lobby-input:focus,#name-input:focus,#weapon-select:focus{
-      outline:none;border-color:#00e676;
-    }
-    #color-row{display:flex;gap:6px;margin-top:4px}
-    .color-swatch{
-      width:26px;height:26px;border-radius:4px;
-      border:2px solid transparent;box-sizing:border-box;cursor:pointer;
-    }
-    .color-swatch.selected{border-color:#00e676}
-
     #play-btn{
       margin-top:16px;width:100%;padding:8px 0;border-radius:4px;border:none;
       background:linear-gradient(90deg,#00c853,#64dd17);
       color:#000;font-size:14px;font-weight:600;
       text-transform:uppercase;letter-spacing:.16em;cursor:pointer;
     }
-    #play-btn:active{transform:translateY(1px);filter:brightness(.9)}
 
-    /* Joystick + buttons */
+    #crosshair{
+      position:absolute;left:50%;top:50%;width:14px;height:14px;
+      margin-left:-7px;margin-top:-7px;border-radius:50%;
+      border:2px solid #cfd8dc;z-index:10;
+    }
+    #hitmarker{
+      position:absolute;left:50%;top:50%;width:22px;height:22px;
+      margin-left:-11px;margin-top:-11px;border-radius:50%;
+      border:2px solid #ffeb3b;opacity:0;transform:scale(.5);
+      transition:opacity .08s,transform .08s;z-index:11;
+    }
+
     .joystick{
       position:absolute;width:140px;height:140px;border-radius:50%;
       background:rgba(10,20,25,.7);
@@ -84,7 +75,6 @@
       position:absolute;width:60px;height:60px;left:40px;top:40px;
       border-radius:50%;
       background:radial-gradient(circle,#00e676 0,#004d40 70%);
-      box-shadow:0 0 10px rgba(0,230,118,.6);
     }
 
     #jump-btn,#sprint-btn,#shoot-btn,#grenade-btn{
@@ -93,163 +83,63 @@
       border:1px solid rgba(0,255,128,.4);
       color:#e0f2f1;font-size:20px;
       display:flex;align-items:center;justify-content:center;
-      touch-action:none;z-index:10;
+      z-index:10;
     }
     #jump-btn{right:200px}
-    #sprint-btn{right:290px;border-color:rgba(0,230,118,.8);color:#00e676}
-    #shoot-btn{right:110px;border-color:rgba(255,82,82,.9);color:#ff5252}
-    #grenade-btn{right:30px;border-color:rgba(255,165,0,.9);color:#ffa500;font-weight:700}
-
-    #stamina-container,#health-container{
-      position:absolute;height:16px;border-radius:2px;
-      background:rgba(5,10,15,.9);z-index:10;
-      border:1px solid rgba(0,255,128,.25);
-    }
-    #stamina-container{bottom:150px;right:40px;width:200px}
-    #health-container{top:10px;right:40px;width:200px}
-    #stamina-bar,#health-bar{width:100%;height:100%}
-    #stamina-bar{background:linear-gradient(90deg,#00e676,#aeea00)}
-    #health-bar{background:linear-gradient(90deg,#ff1744,#ff9100)}
-
-    #crosshair{
-      position:absolute;left:50%;top:50%;width:14px;height:14px;
-      margin-left:-7px;margin-top:-7px;border-radius:50%;
-      border:2px solid #cfd8dc;box-shadow:0 0 8px rgba(0,0,0,.9);z-index:10;
-    }
-    #hitmarker{
-      position:absolute;left:50%;top:50%;width:22px;height:22px;
-      margin-left:-11px;margin-top:-11px;border-radius:50%;
-      border:2px solid #ffeb3b;opacity:0;transform:scale(.5);
-      transition:opacity .08s,transform .08s;z-index:11;
-    }
-
-    #view-toggle{
-      position:absolute;top:10px;right:260px;padding:4px 8px;border-radius:4px;
-      background:rgba(5,10,15,.9);color:#cfd8dc;font-size:11px;z-index:10;
-      border:1px solid rgba(0,255,128,.25);
-      text-transform:uppercase;letter-spacing:.12em;
-    }
+    #sprint-btn{right:290px;color:#00e676}
+    #shoot-btn{right:110px;color:#ff5252}
+    #grenade-btn{right:30px;color:#ffa500}
 
     .name-label{
       position:absolute;font-size:11px;color:#eceff1;
       text-shadow:0 0 4px #000;pointer-events:none;z-index:9;
       text-transform:uppercase;letter-spacing:.12em;
     }
-
-    .glass-feed{
-      position:absolute;top:20px;right:20px;width:220px;padding:12px;
-      color:#bfeaff;font-size:14px;text-align:right;
-      backdrop-filter:blur(12px);
-      background:rgba(0,40,70,.25);
-      border:1px solid rgba(0,255,128,.25);
-      box-shadow:0 0 12px rgba(0,255,128,.25);
-      pointer-events:none;
-    }
   </style>
 </head>
+
 <body>
 
 <div id="lobby">
   <div id="lobby-panel">
     <div id="lobby-title">KNUTSONFPS</div>
-    <div id="lobby-subtitle">TACTICAL MOBILE ARENA</div>
+    <div id="lobby-subtitle">CLEAN BUILD</div>
 
-    <div class="lobby-label">Operator ID</div>
-    <input id="name-input" class="lobby-input" maxlength="16" value="KnutsonFPS" />
-
-    <div class="lobby-label">Squad Colour</div>
-    <div id="color-row">
-      <div class="color-swatch selected" data-color="0xff5252" style="background:#ff5252"></div>
-      <div class="color-swatch" data-color="0x40c4ff" style="background:#40c4ff"></div>
-      <div class="color-swatch" data-color="0x69f0ae" style="background:#69f0ae"></div>
-      <div class="color-swatch" data-color="0xffeb3b" style="background:#ffeb3b"></div>
-      <div class="color-swatch" data-color="0xff80ab" style="background:#ff80ab"></div>
-    </div>
-
-    <div class="lobby-label">Primary weapon</div>
-    <select id="weapon-select">
-      <option value="rifle">Rifle</option>
-      <option value="smg">SMG</option>
-      <option value="shotgun">Shotgun</option>
-      <option value="pistol">Pistol</option>
-    </select>
+    <div class="lobby-label">Operator Name</div>
+    <input id="name-input" class="lobby-input" value="Player" />
 
     <button id="play-btn">DEPLOY</button>
   </div>
 </div>
 
-<div id="info">KNUTSONFPS // DRAG RIGHT TO AIM // LEFT STICK TO MOVE</div>
 <div id="crosshair"></div>
 <div id="hitmarker"></div>
 
-<div id="joy-move" class="joystick">
-  <div id="stick-move" class="stick"></div>
-</div>
-
+<div id="joy-move" class="joystick"><div id="stick-move" class="stick"></div></div>
 <div id="jump-btn">J</div>
 <div id="sprint-btn">SPR</div>
 <div id="shoot-btn">FIRE</div>
 <div id="grenade-btn">GRN</div>
 
-<div id="stamina-container"><div id="stamina-bar"></div></div>
-<div id="health-container"><div id="health-bar"></div></div>
-
-<div id="view-toggle">VIEW: 1ST</div>
-<div id="killfeed" class="glass-feed"></div>
-
 <canvas id="game"></canvas>
 
 <script>
-/* ---------- CONFIG ---------- */
 const BASE = "https://knutsonfps-backend.onrender.com";
 
-let playerName = "KnutsonFPS";
-let playerColor = 0x40c4ff;
-let selectedWeaponKey = "rifle";
-
-const lobby = document.getElementById("lobby");
-const nameInput = document.getElementById("name-input");
-const weaponSelect = document.getElementById("weapon-select");
-const colorSwatches = Array.from(document.querySelectorAll(".color-swatch"));
-
-colorSwatches.forEach(s => {
-  s.addEventListener("click", () => {
-    colorSwatches.forEach(x => x.classList.remove("selected"));
-    s.classList.add("selected");
-    playerColor = parseInt(s.dataset.color);
-    if (localSoldier) updateSoldierColor(localSoldier, playerColor);
-  });
-});
-
-weaponSelect.addEventListener("change", () => {
-  selectedWeaponKey = weaponSelect.value;
-  if (localSoldier) attachWeapon(localSoldier, selectedWeaponKey, playerColor);
-});
-
-document.getElementById("play-btn").addEventListener("click", () => {
-  playerName = nameInput.value.trim() || "Operator";
-  lobby.style.display = "none";
-});
-
-/* ---------- WEAPONS ---------- */
-const weapons = {
-  rifle:  { name:"Rifle",  damage:12, fireRate:0.12, recoil:0.012, range:60 },
-  smg:    { name:"SMG",    damage:7,  fireRate:0.07, recoil:0.008, range:45 },
-  shotgun:{ name:"Shotgun",damage:8,  pellets:6, spread:0.12, fireRate:0.6, recoil:0.03, range:25 },
-  pistol: { name:"Pistol", damage:10, fireRate:0.18, recoil:0.02, range:40 }
+let playerName = "Player";
+document.getElementById("play-btn").onclick = () => {
+  playerName = document.getElementById("name-input").value.trim() || "Player";
+  document.getElementById("lobby").style.display = "none";
 };
-let currentWeapon = weapons.rifle;
-let recoilKick = 0;
 
-/* ---------- THREE SETUP ---------- */
 const canvas = document.getElementById("game");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(innerWidth, innerHeight);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x101318);
 
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 1000);
 
 const ambient = new THREE.AmbientLight(0xffffff, 0.6);
 scene.add(ambient);
@@ -257,560 +147,149 @@ const sun = new THREE.DirectionalLight(0xffffff, 1.2);
 sun.position.set(10,20,10);
 scene.add(sun);
 
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(120,120),
-  new THREE.MeshPhongMaterial({ color:0x263238 })
-);
-ground.rotation.x = -Math.PI/2;
-scene.add(ground);
-
-const walls = [];
-function addWall(x,z,w,h,rot=0){
-  const wall = new THREE.Mesh(
-    new THREE.BoxGeometry(w,3,h),
-    new THREE.MeshPhongMaterial({ color:0x37474f })
-  );
-  wall.position.set(x,1.5,z);
-  wall.rotation.y = rot;
-  wall.userData = { w, h };
-  scene.add(wall);
-  walls.push(wall);
-}
-addWall(0,-60,120,1);
-addWall(0,60,120,1);
-addWall(-60,0,1,120);
-addWall(60,0,1,120);
-addWall(0,0,10,1);
-addWall(20,10,12,1,Math.PI/4);
-addWall(-25,-15,8,1);
-
-function collidesWithWall(px,pz){
-  for(const w of walls){
-    const dx = Math.abs(px - w.position.x);
-    const dz = Math.abs(pz - w.position.z);
-    if (dx < w.userData.w/2 + 0.5 && dz < w.userData.h/2 + 0.5) return true;
-  }
-  return false;
-}
-
-/* ---------- PLAYER + SOLDIER ---------- */
 const player = new THREE.Object3D();
 player.position.set(0,0.5,0);
 scene.add(player);
 
-function createSoldier(color){
+function createSoldier(color=0x40c4ff){
   const g = new THREE.Group();
-  const torsoGeo = new THREE.BoxGeometry(0.6,0.9,0.3);
-  const headGeo  = new THREE.BoxGeometry(0.35,0.35,0.35);
-  const limbGeo  = new THREE.BoxGeometry(0.18,0.7,0.18);
   const mat = new THREE.MeshPhongMaterial({ color });
 
-  const torso = new THREE.Mesh(torsoGeo,mat); torso.position.y = 1.0;
-  const head  = new THREE.Mesh(headGeo,mat);  head.position.y  = 1.55;
-  const armL  = new THREE.Mesh(limbGeo,mat);
-  const armR  = new THREE.Mesh(limbGeo,mat);
-  const legL  = new THREE.Mesh(limbGeo,mat);
-  const legR  = new THREE.Mesh(limbGeo,mat);
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.9,0.3), mat);
+  torso.position.y = 1.0;
 
-  armL.position.set(-0.45,1.0,0);
-  armR.position.set( 0.45,1.0,0);
-  legL.position.set(-0.2,0.45,0);
-  legR.position.set( 0.2,0.45,0);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.35,0.35,0.35), mat);
+  head.position.y = 1.55;
 
-  g.add(torso,head,armL,armR,legL,legR);
-  g.userData = { torso,head,armL,armR,legL,legR,animState:"idle",animTime:0,shootTimer:0,throwTimer:0,weapon:null };
+  g.add(torso, head);
   return g;
 }
 
-function updateSoldierColor(soldier,color){
-  soldier.traverse(o => { if (o.isMesh) o.material.color.setHex(color); });
-}
-
-function createWeaponMesh(type,color){
-  const g = new THREE.Group();
-  const bodyMat   = new THREE.MeshPhongMaterial({ color:0x212121 });
-  const accentMat = new THREE.MeshPhongMaterial({ color });
-
-  if (type === "rifle"){
-    const body   = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.18,0.18), bodyMat); body.position.set(0.45,0,0);
-    const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.08,0.08), bodyMat); barrel.position.set(0.95,0,0);
-    const mag    = new THREE.Mesh(new THREE.BoxGeometry(0.18,0.25,0.12), accentMat); mag.position.set(0.3,-0.18,0);
-    g.add(body,barrel,mag);
-  } else if (type === "smg"){
-    const body   = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.2,0.2), bodyMat); body.position.set(0.3,0,0);
-    const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.35,0.08,0.08), bodyMat); barrel.position.set(0.7,0,0);
-    const mag    = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.22,0.12), accentMat); mag.position.set(0.15,-0.18,0);
-    g.add(body,barrel,mag);
-  } else if (type === "shotgun"){
-    const body   = new THREE.Mesh(new THREE.BoxGeometry(1.1,0.2,0.2), bodyMat); body.position.set(0.55,0,0);
-    const barrel = new THREE.Mesh(new THREE.BoxGeometry(1.2,0.12,0.12), bodyMat); barrel.position.set(0.6,0.12,0);
-    g.add(body,barrel);
-  } else if (type === "pistol"){
-    const body   = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.18,0.18), bodyMat); body.position.set(0.2,0,0);
-    const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.08,0.08), bodyMat); barrel.position.set(0.5,0.02,0);
-    const grip   = new THREE.Mesh(new THREE.BoxGeometry(0.12,0.25,0.16), accentMat); grip.position.set(0.05,-0.2,0);
-    g.add(body,barrel,grip);
-  }
-
-  g.position.set(0.35,0,0.12);
-  g.rotation.z = -0.2;
-  return g;
-}
-
-function attachWeapon(soldier, weaponKey, color){
-  const ud = soldier.userData;
-  if (ud.weapon){
-    ud.armR.remove(ud.weapon);
-    ud.weapon = null;
-  }
-  const mesh = createWeaponMesh(weaponKey, color);
-  ud.armR.add(mesh);
-  ud.weapon = mesh;
-}
-
-let localSoldier = createSoldier(playerColor);
+const localSoldier = createSoldier();
 player.add(localSoldier);
-attachWeapon(localSoldier, selectedWeaponKey, playerColor);
 
-/* ---------- SPAWN ---------- */
-const safeSpawns = [
-  { x:-40, z:-40 },
-  { x: 40, z:-40 },
-  { x:-40, z: 40 },
-  { x: 40, z: 40 },
-  { x:  0, z:  0 }
-];
-
-let velY = 0;
-function spawnPlayer(){
-  let spot = safeSpawns[Math.floor(Math.random()*safeSpawns.length)];
-  let attempts = 0;
-  while (collidesWithWall(spot.x, spot.z) && attempts < 20){
-    spot = { x:(Math.random()-0.5)*80, z:(Math.random()-0.5)*80 };
-    attempts++;
-  }
-  player.position.set(spot.x,0.5,spot.z);
-  velY = 0;
-}
-spawnPlayer();
-
-/* ---------- CAMERA / MOVEMENT ---------- */
 let yaw = 0, pitch = 0;
-const pitchLimit = THREE.MathUtils.degToRad(40);
-const gravity = -20;
-const jumpSpeed = 8;
+let moveX = 0, moveY = 0;
+let velY = 0;
 let grounded = true;
-
-let sprinting = false;
-let stamina = 1;
-const staminaDrain = 0.5;
-const staminaRegen = 0.3;
-const staminaBar = document.getElementById("stamina-bar");
-
-let health = 1;
-const healthBar = document.getElementById("health-bar");
-let isDead = false;
-
-let thirdPerson = false;
-const viewToggle = document.getElementById("view-toggle");
-viewToggle.addEventListener("click", () => {
-  thirdPerson = !thirdPerson;
-  viewToggle.textContent = "VIEW: " + (thirdPerson ? "3RD" : "1ST");
-  localSoldier.visible = thirdPerson;
-});
-
-/* ---------- OTHER PLAYERS ---------- */
-const otherPlayers = new Map();
-function randomColor(){
-  const colors = [0xff5252,0x40c4ff,0x69f0ae,0xffeb3b,0xff80ab];
-  return colors[Math.floor(Math.random()*colors.length)];
-}
-function createNameLabel(text){
-  const el = document.createElement("div");
-  el.className = "name-label";
-  el.textContent = text;
-  document.body.appendChild(el);
-  return el;
-}
-
-/* ---------- INPUT / JOYSTICK ---------- */
-let lastActive = performance.now();
-function markActive(){ lastActive = performance.now(); }
 
 function createJoystick(joyEl, stickEl, callback){
   const max = 50;
   const center = 70;
-  let fingerId = null;
+  let finger = null;
 
   joyEl.addEventListener("touchstart", e => {
-    if (fingerId === null && e.changedTouches.length > 0){
-      fingerId = e.changedTouches[0].identifier;
-      markActive();
-    }
+    if (finger === null) finger = e.changedTouches[0].identifier;
   });
 
   joyEl.addEventListener("touchmove", e => {
     for (const t of e.changedTouches){
-      if (t.identifier === fingerId){
+      if (t.identifier === finger){
         const rect = joyEl.getBoundingClientRect();
         let x = t.clientX - rect.left - center;
         let y = t.clientY - rect.top  - center;
-        const dist = Math.hypot(x,y);
-        if (dist > max){
-          x = x/dist*max;
-          y = y/dist*max;
-        }
-        stickEl.style.left = (x+40) + "px";
-        stickEl.style.top  = (y+40) + "px";
+        const d = Math.hypot(x,y);
+        if (d > max){ x = x/d*max; y = y/d*max; }
+        stickEl.style.left = (x+40)+"px";
+        stickEl.style.top  = (y+40)+"px";
         callback(x/max, y/max);
-        markActive();
       }
     }
   });
 
   joyEl.addEventListener("touchend", e => {
     for (const t of e.changedTouches){
-      if (t.identifier === fingerId){
-        fingerId = null;
+      if (t.identifier === finger){
+        finger = null;
         stickEl.style.left = "40px";
         stickEl.style.top  = "40px";
         callback(0,0);
-        markActive();
       }
     }
   });
 }
 
-let moveX = 0, moveY = 0;
 createJoystick(
   document.getElementById("joy-move"),
   document.getElementById("stick-move"),
-  (x,y) => { moveX = x; moveY = y; }
+  (x,y)=>{ moveX=x; moveY=y; }
 );
 
-/* Look: drag right side */
-let lookFinger = null;
-let lastLX = 0, lastLY = 0;
-window.addEventListener("touchstart", e => {
-  for (const t of e.changedTouches){
-    if (t.clientX > window.innerWidth*0.5 && lookFinger === null){
-      lookFinger = t.identifier;
-      lastLX = t.clientX;
-      lastLY = t.clientY;
-      markActive();
+let lookFinger=null,lastLX=0,lastLY=0;
+addEventListener("touchstart",e=>{
+  for(const t of e.changedTouches){
+    if(t.clientX>innerWidth*0.5 && lookFinger===null){
+      lookFinger=t.identifier;
+      lastLX=t.clientX; lastLY=t.clientY;
     }
   }
 });
-window.addEventListener("touchmove", e => {
-  for (const t of e.changedTouches){
-    if (t.identifier === lookFinger){
-      const dx = t.clientX - lastLX;
-      const dy = t.clientY - lastLY;
-      const baseSens = 0.0045;
-      yaw   += dx * baseSens;
-      pitch -= dy * baseSens;
-      pitch = Math.max(-pitchLimit, Math.min(pitchLimit, pitch));
-      lastLX = t.clientX;
-      lastLY = t.clientY;
-      markActive();
+addEventListener("touchmove",e=>{
+  for(const t of e.changedTouches){
+    if(t.identifier===lookFinger){
+      yaw += (t.clientX-lastLX)*0.0045;
+      pitch -= (t.clientY-lastLY)*0.0045;
+      pitch = Math.max(-1,Math.min(1,pitch));
+      lastLX=t.clientX; lastLY=t.clientY;
     }
   }
 });
-window.addEventListener("touchend", e => {
-  for (const t of e.changedTouches){
-    if (t.identifier === lookFinger){
-      lookFinger = null;
-      markActive();
-    }
+addEventListener("touchend",e=>{
+  for(const t of e.changedTouches){
+    if(t.identifier===lookFinger) lookFinger=null;
   }
 });
 
-/* Jump / sprint buttons */
-document.getElementById("jump-btn").addEventListener("touchstart", e => {
-  if (grounded && !isDead){
-    velY = jumpSpeed;
-    grounded = false;
-    markActive();
-  }
-  e.preventDefault();
-});
-document.getElementById("sprint-btn").addEventListener("touchstart", e => {
-  sprinting = true; markActive(); e.preventDefault();
-});
-document.getElementById("sprint-btn").addEventListener("touchend", e => {
-  sprinting = false; markActive(); e.preventDefault();
-});
-
-/* ---------- SHOOTING / HITMARKER ---------- */
-const shootBtn = document.getElementById("shoot-btn");
 const hitmarker = document.getElementById("hitmarker");
-let shootCooldown = 0;
-
 function showHitmarker(){
-  hitmarker.style.opacity = "1";
-  hitmarker.style.transform = "scale(1)";
-  setTimeout(() => {
-    hitmarker.style.opacity = "0";
-    hitmarker.style.transform = "scale(0.5)";
-  }, 120);
+  hitmarker.style.opacity="1";
+  hitmarker.style.transform="scale(1)";
+  setTimeout(()=>{
+    hitmarker.style.opacity="0";
+    hitmarker.style.transform="scale(.5)";
+  },120);
 }
+document.getElementById("shoot-btn").ontouchstart = () => showHitmarker();
 
-shootBtn.addEventListener("touchstart", e => {
-  if (!isDead && shootCooldown <= 0){
-    shoot();
-    shootCooldown = currentWeapon.fireRate;
-    markActive();
-  }
-  e.preventDefault();
-});
-
-function shoot(){
-  const origin = player.position.clone();
-  origin.y += 1.4;
-  const dir = new THREE.Vector3();
-  camera.getWorldDirection(dir);
-  dir.y -= recoilKick;
-
-  const ray = new THREE.Raycaster(origin, dir, 0, currentWeapon.range);
-  const targets = [];
-  otherPlayers.forEach(p => targets.push(p.obj));
-  const hits = ray.intersectObjects(targets, true);
-
-  if (hits.length > 0){
-    showHitmarker();
-    // damage logic would go here if you add HTTP endpoints
-  }
-
-  recoilKick += currentWeapon.recoil;
-  localSoldier.userData.shootTimer = 0.12;
-}
-
-/* ---------- GRENADES (local only visual) ---------- */
-class Grenade {
-  constructor(position, direction){
-    this.mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(0.25,12,12),
-      new THREE.MeshPhongMaterial({ color:0xffc107 })
-    );
-    this.mesh.position.copy(position);
-    this.velocity = direction.clone();
-    this.gravity = new THREE.Vector3(0,-25,0);
-    this.alive = true;
-    this.timer = 3.0;
-    this.exploded = false;
-    scene.add(this.mesh);
-  }
-  update(dt){
-    if (!this.alive) return;
-    this.velocity.add(this.gravity.clone().multiplyScalar(dt));
-    this.mesh.position.add(this.velocity.clone().multiplyScalar(dt));
-    this.timer -= dt;
-    if (this.mesh.position.y <= 0.2 && !this.exploded) this.explode();
-    else if (this.timer <= 0 && !this.exploded) this.explode();
-  }
-  explode(){
-    this.exploded = true;
-    this.alive = false;
-    const pos = this.mesh.position.clone();
-    spawnExplosionEffect(pos);
-    scene.remove(this.mesh);
-  }
-}
-const grenades = [];
-function spawnExplosionEffect(position){
-  const geo = new THREE.SphereGeometry(0.5,16,16);
-  const mat = new THREE.MeshBasicMaterial({ color:0xfff176, transparent:true, opacity:0.8 });
-  const mesh = new THREE.Mesh(geo,mat);
-  mesh.position.copy(position);
-  scene.add(mesh);
-  const start = performance.now();
-  const duration = 250;
-  function anim(t){
-    const k = (t-start)/duration;
-    if (k >= 1){ scene.remove(mesh); return; }
-    const s = 1 + k*3;
-    mesh.scale.set(s,s,s);
-    mesh.material.opacity = 0.8*(1-k);
-    requestAnimationFrame(anim);
-  }
-  requestAnimationFrame(anim);
-}
-document.getElementById("grenade-btn").addEventListener("touchstart", e => {
-  if (isDead) return;
-  const origin = player.position.clone();
-  origin.y += 1.2;
-  const dir = new THREE.Vector3();
-  camera.getWorldDirection(dir);
-  dir.normalize().multiplyScalar(16);
-  dir.y += 6;
-  grenades.push(new Grenade(origin, dir));
-  localSoldier.userData.throwTimer = 0.25;
-  markActive();
-  e.preventDefault();
-});
-
-/* ---------- MOVEMENT UPDATE ---------- */
-function updateMovement(dt){
-  if (isDead) return;
-
-  const baseSpeed = 7;
-  const sprintMult = 1.8;
-  const deadzone = 0.35;
-
-  let mx = Math.abs(moveX) > deadzone ? moveX : 0;
-  let my = Math.abs(moveY) > deadzone ? moveY : 0;
-
-  let speed = baseSpeed;
-  if (sprinting && stamina > 0.05){
-    speed *= sprintMult;
-    stamina -= staminaDrain*dt;
-  } else {
-    stamina += staminaRegen*dt;
-  }
-  stamina = Math.max(0,Math.min(1,stamina));
-  staminaBar.style.width = (stamina*100) + "%";
-
-  const forward = -my;
-  const strafe  = mx;
-  const cosY = Math.cos(yaw);
-  const sinY = Math.sin(yaw);
-  const dx = (strafe*cosY) + (forward*sinY);
-  const dz = (strafe*sinY) - (forward*cosY);
-
-  const newX = player.position.x + dx*speed*dt;
-  const newZ = player.position.z + dz*speed*dt;
-
-  if (!collidesWithWall(newX, player.position.z)) player.position.x = newX;
-  if (!collidesWithWall(player.position.x, newZ)) player.position.z = newZ;
-
-  velY += gravity*dt;
-  player.position.y += velY*dt;
-  if (player.position.y < 0.5){
-    player.position.y = 0.5;
-    velY = 0;
-    grounded = true;
-  }
-
-  player.rotation.y = yaw;
-
-  const camHeight = 1.4;
-  if (!thirdPerson){
-    camera.position.set(
-      player.position.x,
-      player.position.y + camHeight - 0.5,
-      player.position.z
-    );
-  } else {
-    const dist = 3;
-    const offsetX = Math.sin(yaw)*-dist;
-    const offsetZ = -Math.cos(yaw)*-dist;
-    camera.position.set(
-      player.position.x + offsetX,
-      player.position.y + camHeight + 1,
-      player.position.z + offsetZ
-    );
-  }
-
-  const dir = new THREE.Vector3(
-    Math.sin(yaw)*Math.cos(pitch),
-    Math.sin(pitch),
-    -Math.cos(yaw)*Math.cos(pitch)
-  );
-  camera.lookAt(
-    camera.position.x + dir.x,
-    camera.position.y + dir.y,
-    camera.position.z + dir.z
-  );
-}
-
-/* ---------- ANIMATION (simple) ---------- */
-function updateSoldierAnimation(soldier, dt){
-  const ud = soldier.userData;
-  ud.animTime += dt;
-  const t = ud.animTime;
-
-  const { armL, armR, legL, legR, head, torso } = ud;
-  armL.rotation.set(0,0,0);
-  armR.rotation.set(0,0,0);
-  legL.rotation.set(0,0,0);
-  legR.rotation.set(0,0,0);
-  head.rotation.set(0,0,0);
-  torso.rotation.set(0,0,0);
-
-  if (ud.shootTimer > 0){
-    ud.shootTimer -= dt;
-    armR.rotation.x -= 0.6;
-    torso.rotation.y += 0.1;
-  }
-  if (ud.throwTimer > 0){
-    ud.throwTimer -= dt;
-    armR.rotation.x = -1.0 + (ud.throwTimer*4);
-    armL.rotation.x = -0.3;
-  }
-
-  if (ud.animState === "idle"){
-    const bob = Math.sin(t*2)*0.03;
-    torso.position.y = 1.0 + bob;
-    head.position.y  = 1.55 + bob;
-  } else if (ud.animState === "walk" || ud.animState === "run"){
-    const freq = ud.animState === "run" ? 10 : 6;
-    const amp  = ud.animState === "run" ? 0.6 : 0.35;
-    const s = Math.sin(t*freq)*amp;
-    armL.rotation.x =  s;
-    armR.rotation.x = -s;
-    legL.rotation.x = -s;
-    legR.rotation.x =  s;
-  }
-}
-
-/* ---------- REMOTE PLAYERS (HTTP + WS) ---------- */
 const wsRemotePlayers = {};
 
-function updateNameLabels(){
-  const width = window.innerWidth;
-  const height = window.innerHeight;
+function updateWsRemotePlayer(id,x,y,z,rot){
+  let entry = wsRemotePlayers[id];
 
-  Object.values(wsRemotePlayers).forEach(entry => {
-    entry.obj.position.lerp(entry.targetPos, 0.1);
-    const pos = entry.obj.position.clone();
-    pos.y += 2.0;
-    pos.project(camera);
-    const x = (pos.x*0.5 + 0.5)*width;
-    const y = (-pos.y*0.5 + 0.5)*height;
-    entry.label.style.left = x + "px";
-    entry.label.style.top  = y + "px";
-  });
+  if(!entry){
+    const obj = createSoldier(0xff5252);
+    scene.add(obj);
+
+    const label = document.createElement("div");
+    label.className="name-label";
+    label.textContent="Player";
+    document.body.appendChild(label);
+
+    entry = { obj, label, targetPos:new THREE.Vector3(x,0.5,z) };
+    wsRemotePlayers[id] = entry;
+  }
+
+  entry.targetPos.set(x,0.5,z);
+  entry.obj.rotation.y = rot;
 }
 
-/* ---------- WS MOVEMENT SYNC ---------- */
-let ws;
-let wsConnected = false;
-let wsId = null;
+let ws, wsId=null, wsConnected=false;
 
 function connectWS(){
   ws = new WebSocket("wss://knutsonfps-backend.onrender.com");
 
-  ws.onopen = () => {
-    wsConnected = true;
-    console.log("[WS] connected");
-  };
-  ws.onclose = () => {
-    wsConnected = false;
-    console.log("[WS] disconnected, retrying...");
-    setTimeout(connectWS, 1000);
-  };
-  ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
-    if (msg.type === "welcome"){
-      wsId = msg.id;
-      console.log("[WS] id:", wsId);
-    }
+  ws.onopen = () => wsConnected=true;
+  ws.onclose = () => { wsConnected=false; setTimeout(connectWS,1000); };
+
+  ws.onmessage = (e)=>{
+    const msg = JSON.parse(e.data);
+    if(msg.type==="welcome") wsId = msg.id;
   };
 }
 connectWS();
 
-setInterval(() => {
-  if (!wsConnected || !ws || ws.readyState !== WebSocket.OPEN || !wsId) return;
+setInterval(()=>{
+  if(!wsConnected || !wsId) return;
   ws.send(JSON.stringify({
     type:"update",
     x:player.position.x,
@@ -818,79 +297,91 @@ setInterval(() => {
     z:player.position.z,
     rot:player.rotation.y
   }));
-}, 100);
+},100);
 
-/* Poll /debug/state for others */
 async function pollWsPlayers(){
   try{
-    const res = await fetch(BASE + "/debug/state");
+    const res = await fetch(BASE + "/");
     const data = await res.json();
     const players = data.players || {};
     const seen = new Set();
 
-    for (const id in players){
-      if (id === wsId) continue;
+    for(const id in players){
+      if(id===wsId) continue;
       const p = players[id];
       seen.add(id);
-      updateWsRemotePlayer(id, p.x, p.y, p.z, p.rot);
+      updateWsRemotePlayer(id,p.x,p.y,p.z,p.rot);
     }
 
-    // remove stale
-    for (const id in wsRemotePlayers){
-      if (!seen.has(id)){
-        const entry = wsRemotePlayers[id];
-        scene.remove(entry.obj);
-        entry.label.remove();
+    for(const id in wsRemotePlayers){
+      if(!seen.has(id)){
+        const e = wsRemotePlayers[id];
+        scene.remove(e.obj);
+        e.label.remove();
         delete wsRemotePlayers[id];
       }
     }
-  } catch(e){
-    console.log("[WS] poll error", e);
-  }
+  }catch(e){}
 }
-function updateWsRemotePlayer(id,x,y,z,rot){
-  let entry = wsRemotePlayers[id];
-  if (!entry){
-    const obj = createSoldier(randomColor());
-    attachWeapon(obj,"rifle",0x40c4ff);
-    scene.add(obj);
-    const label = createNameLabel("Player");
-    entry = {
-      obj,
-      label,
-      targetPos:new THREE.Vector3(x,0.5,z)
-    };
-    wsRemotePlayers[id] = entry;
-  }
-  entry.targetPos.set(x,0.5,z);
-  entry.obj.rotation.y = rot;
-}
-setInterval(pollWsPlayers, 200);
+setInterval(pollWsPlayers,200);
 
-/* ---------- MAIN LOOP ---------- */
-let lastTime = performance.now();
+let last = performance.now();
 function animate(){
   requestAnimationFrame(animate);
   const now = performance.now();
-  const dt = (now - lastTime)/1000;
-  lastTime = now;
+  const dt = (now-last)/1000;
+  last = now;
 
-  updateMovement(dt);
-  updateSoldierAnimation(localSoldier, dt);
-  grenades.forEach(g => g.update(dt));
-  shootCooldown = Math.max(0, shootCooldown - dt);
+  const speed = 7;
+  const dx = moveX*speed*dt;
+  const dz = -moveY*speed*dt;
 
-  updateNameLabels();
+  player.position.x += Math.sin(yaw)*dz + Math.cos(yaw)*dx;
+  player.position.z += Math.cos(yaw)*dz - Math.sin(yaw)*dx;
 
-  renderer.render(scene, camera);
+  player.rotation.y = yaw;
+
+  camera.position.set(
+    player.position.x,
+    player.position.y+1.4,
+    player.position.z
+  );
+
+  const dir = new THREE.Vector3(
+    Math.sin(yaw)*Math.cos(pitch),
+    Math.sin(pitch),
+    -Math.cos(yaw)*Math.cos(pitch)
+  );
+  camera.lookAt(
+    camera.position.x+dir.x,
+    camera.position.y+dir.y,
+    camera.position.z+dir.z
+  );
+
+  for(const id in wsRemotePlayers){
+    const e = wsRemotePlayers[id];
+    e.obj.position.lerp(e.targetPos,0.1);
+
+    const pos = e.obj.position.clone();
+    pos.y += 2;
+    pos.project(camera);
+
+    const x = (pos.x*0.5+0.5)*innerWidth;
+    const y = (-pos.y*0.5+0.5)*innerHeight;
+
+    e.label.style.left = x+"px";
+    e.label.style.top  = y+"px";
+  }
+
+  renderer.render(scene,camera);
 }
 animate();
 
-window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth/window.innerHeight;
+onresize = ()=>{
+  camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+  renderer.setSize(innerWidth,innerHeight);
+};
 </script>
 </body>
 </html>
