@@ -1234,26 +1234,7 @@ async function pollKillfeed() {
   }
 }
 
-// GAME LOOP
-let lastTime = performance.now();
-
-function loop(t) {
-  const dt = (t - lastTime) / 1000;
-  lastTime = t;
-
-  updateMovement(dt);
-  updateSoldierAnimation(localSoldier, dt);
-  grenades.forEach(g => g.update(dt));
-  updateNameLabels();
-
-  if (shootCooldown > 0) shootCooldown -= dt;
-  if (recoilKick > 0) recoilKick -= dt * 0.05;
-  if (recoilKick < 0) recoilKick = 0;
-
-  renderer.render(scene, camera);
-  requestAnimationFrame(loop);
-}
-
+// ANIMATION
 function updateSoldierAnimation(soldier, dt) {
   const ud = soldier.userData;
   ud.animTime += dt;
@@ -1306,6 +1287,26 @@ function updateSoldierAnimation(soldier, dt) {
     legR.rotation.x = 0.3;
     torso.rotation.x = 0.1;
   }
+}
+
+// GAME LOOP
+let lastTime = performance.now();
+
+function loop(t) {
+  const dt = (t - lastTime) / 1000;
+  lastTime = t;
+
+  updateMovement(dt);
+  updateSoldierAnimation(localSoldier, dt);
+  grenades.forEach(g => g.update(dt));
+  updateNameLabels();
+
+  if (shootCooldown > 0) shootCooldown -= dt;
+  if (recoilKick > 0) recoilKick -= dt * 0.05;
+  if (recoilKick < 0) recoilKick = 0;
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
 }
 
 // PLAY BUTTON
